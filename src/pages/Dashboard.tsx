@@ -2,8 +2,9 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Sparkles, LogOut, Upload } from "lucide-react";
+import { Sparkles, LogOut } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import SpreadsheetUpload from "@/components/SpreadsheetUpload";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -77,17 +78,8 @@ const Dashboard = () => {
             </p>
           </div>
 
-          {/* Upload Area */}
-          <div className="rounded-2xl border-2 border-dashed border-border bg-card p-12 text-center hover:border-primary/50 transition-colors cursor-pointer">
-            <Upload className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
-            <h3 className="text-xl font-semibold mb-2">Arraste sua planilha aqui</h3>
-            <p className="text-muted-foreground mb-6">
-              ou clique para selecionar (Excel, CSV, Google Sheets)
-            </p>
-            <Button>
-              Selecionar arquivo
-            </Button>
-          </div>
+          {/* Upload Component */}
+          <SpreadsheetUpload />
 
           {/* Recent Analyses */}
           <div className="mt-12">
