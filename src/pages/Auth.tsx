@@ -35,7 +35,7 @@ const Auth = () => {
         
         // Redirect to external dashboard with auth token
         if (data.session) {
-          const dashboardUrl = new URL('https://dashboardscizonai.vercel.app/dashboard/default');
+          const dashboardUrl = new URL('https://dashboardscizonai.vercel.app/dashboard/auth-receiver');
           dashboardUrl.searchParams.set('token', data.session.access_token);
           dashboardUrl.searchParams.set('email', email);
           
@@ -61,7 +61,7 @@ const Auth = () => {
         
         // Redirect to external dashboard with auth token
         if (data.session) {
-          const dashboardUrl = new URL('https://dashboardscizonai.vercel.app/dashboard/default');
+          const dashboardUrl = new URL('https://dashboardscizonai.vercel.app/dashboard/auth-receiver');
           dashboardUrl.searchParams.set('token', data.session.access_token);
           dashboardUrl.searchParams.set('email', email);
           
