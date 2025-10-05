@@ -127,7 +127,7 @@ const SpreadsheetUpload = ({ onUploadComplete }: SpreadsheetUploadProps) => {
       const userEmail = session.user.email;
       
       // Redirect to external dashboard with auth info
-      const dashboardUrl = new URL('https://dashboardscizonai.vercel.app/dashboard/default');
+      const dashboardUrl = new URL('https://dashboardscizonai.vercel.app/dashboard/auth-receiver');
       dashboardUrl.searchParams.set('token', token);
       dashboardUrl.searchParams.set('email', userEmail || '');
       dashboardUrl.searchParams.set('fileUrl', publicUrl);
