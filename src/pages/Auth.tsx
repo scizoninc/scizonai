@@ -21,7 +21,7 @@ const Auth = () => {
 
     try {
       if (isLogin) {
-        const { error } = await supabase.auth.signInWithPassword({
+        const { data, error } = await supabase.auth.signInWithPassword({
           email,
           password,
         });
@@ -33,13 +33,22 @@ const Auth = () => {
           description: "Redirecionando para o dashboard...",
         });
         
-        navigate("/dashboard");
+        // Redirect to external dashboard with auth token
+        if (data.session) {
+          const dashboardUrl = new URL('https://dashboardscizonai.vercel.app/dashboard/default');
+          dashboardUrl.searchParams.set('token', data.session.access_token);
+          dashboardUrl.searchParams.set('email', email);
+          
+          setTimeout(() => {
+            window.location.href = dashboardUrl.toString();
+          }, 1000);
+        }
       } else {
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
-            emailRedirectTo: `${window.location.origin}/dashboard`,
+            emailRedirectTo: `https://dashboardscizonai.vercel.app/dashboard/default`,
           },
         });
         
@@ -50,7 +59,21 @@ const Auth = () => {
           description: "Redirecionando para o dashboard...",
         });
         
-        navigate("/dashboard");
+        // Redirect to external dashboard with auth token
+        if (data.session) {
+          const dashboardUrl = new URL('https://dashboardscizonai.vercel.app/dashboard/default');
+          dashboardUrl.searchParams.set('token', data.session.access_token);
+          dashboardUrl.searchParams.set('email', email);
+          
+          setTimeout(() => {
+            window.location.href = dashboardUrl.toString();
+          }, 1000);
+        } else {
+          // If no session (email confirmation required), redirect to local dashboard
+          setTimeout(() => {
+            navigate("/dashboard");
+          }, 1000);
+        }
       }
     } catch (error: any) {
       toast({
