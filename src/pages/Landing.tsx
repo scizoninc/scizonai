@@ -41,7 +41,7 @@ const Landing = () => {
             </div>
             
             <h1 className="text-6xl md:text-8xl font-bold tracking-tight animate-fade-up" style={{ animationDelay: '0.1s' }}>
-              Análise inteligente
+              Visualização Avançada de Dados
               <br />
               <span className="relative inline-block">
                 <span className="relative z-10">de planilhas</span>
@@ -50,8 +50,7 @@ const Landing = () => {
             </h1>
             
             <p className="text-xl md:text-2xl text-muted-foreground max-w-2xl mx-auto animate-fade-up" style={{ animationDelay: '0.2s' }}>
-              Upload suas planilhas e transforme-as em dashboards interativos com insights poderosos.
-              Exporte para PDF e PowerPoint em segundos.
+              Tranforme seus dados em visualização avançada.
             </p>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4 animate-fade-up" style={{ animationDelay: '0.3s' }}>
@@ -118,14 +117,14 @@ const Landing = () => {
             {[
               {
                 icon: Upload,
-                title: "Upload Inteligente",
-                description: "Faça upload de planilhas em diversos formatos. Nossa IA processa e analisa automaticamente.",
+                title: "Dados Analisados",
+                description: "Dados tratados com análise avançada.",
                 delay: "0s"
               },
               {
                 icon: BarChart3,
                 title: "Dashboards Interativos",
-                description: "Visualize seus dados com gráficos dinâmicos e indicadores em tempo real.",
+                description: "Gráficos dinâmicos e indicadores em tempo real.",
                 delay: "0.1s"
               },
               {
