@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Sparkles, LogOut } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import SpreadsheetUpload from "@/components/SpreadsheetUpload";
+import SpreadsheetUpload from "@/components/ui/SpreadsheetUpload";
 
 const Dashboard = () => {
   const navigate = useNavigate();
