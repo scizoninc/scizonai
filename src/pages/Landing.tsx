@@ -44,7 +44,6 @@ const Landing = () => {
               Visualização Avançada de Dados
               <br />
               <span className="relative inline-block">
-                <span className="relative z-10">de planilhas</span>
                 <span className="absolute bottom-2 left-0 w-full h-4 bg-primary/20 -skew-x-12 animate-slide-in-left" style={{ animationDelay: '0.5s' }} />
               </span>
             </h1>
