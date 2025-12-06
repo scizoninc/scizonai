@@ -20,7 +20,10 @@ const App = () => (
           <Route path="/" element={<Landing />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/dashboard" element={<Dashboard />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+          <Route path="/payment" element={<Payment />} />
+          <Route path="/import" element={<ImportFile />} />
+          <Route path="/checkout" element={<Checkout />} />
+          <Route path="/download" element={<Download />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
