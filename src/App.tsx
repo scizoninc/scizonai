@@ -7,6 +7,10 @@ import Landing from "./pages/Landing";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import NotFound from "./pages/NotFound";
+import Payment from "./pages/Payment"; 
+import ImportFile from "./pages/ImportFile";
+import Checkout from "./pages/Checkout";
+import Download from "./pages/Download";
 
 const queryClient = new QueryClient();
 
