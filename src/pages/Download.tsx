@@ -6,19 +6,63 @@ import { useToast } from "@/hooks/use-toast";
 const DownloadPage = () => {
   const location = useLocation();
   const { toast } = useToast();
-  const files = location.state?.files || ["documento.pdf"];
 
-  const handleDownload = (fileName: string) => {
+  // Recebe arquivos e URLs vindos da LoadingPage
+  const files = location.state?.files || [];
+  const fileUrls = location.state?.fileUrls || []; // Lista de URLs geradas pelo backend
+
+  // Função padrão para baixar qualquer arquivo PDF
+  const downloadFile = async (fileUrl: string, filename: string) => {
     toast({
       title: "Download iniciado",
-      description: `${fileName} está sendo baixado.`,
+      description: `${filename} está sendo baixado.`,
     });
+
+    try {
+      // Chama seu backend Next.js para BAIXAR
+      const response = await fetch(
+        `/api/energent/download?url=${encodeURIComponent(fileUrl)}`
+      );
+
+      if (!response.ok) {
+        throw new Error("Erro ao baixar arquivo");
+      }
+
+      // Recupera o PDF como blob
+      const blob = await response.blob();
+
+      // Cria um link invisível para baixar o arquivo
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Não foi possível baixar o arquivo.",
+        variant: "destructive",
+      });
+    }
   };
 
+  // Baixar individual
+  const handleDownload = (index: number, processedName: string) => {
+    const fileUrl = fileUrls[index];
+    downloadFile(fileUrl, processedName);
+  };
+
+  // Baixar todos
   const handleDownloadAll = () => {
     toast({
       title: "Download iniciado",
       description: "Todos os arquivos estão sendo baixados.",
+    });
+
+    fileUrls.forEach((url: string, index: number) => {
+      const processedName = files[index].replace(/\.[^/.]+$/, "_processado.pdf");
+      downloadFile(url, processedName);
     });
   };
 
@@ -43,6 +87,7 @@ const DownloadPage = () => {
       {/* Content */}
       <section className="container mx-auto px-6 py-16">
         <div className="max-w-lg mx-auto">
+
           {/* Success State */}
           <div className="text-center mb-12 animate-fade-in">
             <div className="w-20 h-20 rounded-full bg-muted flex items-center justify-center mx-auto mb-6">
@@ -60,6 +105,7 @@ const DownloadPage = () => {
           <div className="space-y-3 mb-8">
             {files.map((fileName: string, index: number) => {
               const processedName = fileName.replace(/\.[^/.]+$/, "_processado.pdf");
+
               return (
                 <div
                   key={index}
@@ -69,7 +115,7 @@ const DownloadPage = () => {
                   <div className="w-12 h-12 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
                     <FileText className="w-6 h-6 text-muted-foreground" />
                   </div>
-                  
+
                   <div className="flex-1 min-w-0">
                     <p className="text-foreground text-sm font-medium truncate">
                       {processedName}
@@ -78,11 +124,11 @@ const DownloadPage = () => {
                       Pronto para download
                     </p>
                   </div>
-                  
+
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={() => handleDownload(processedName)}
+                    onClick={() => handleDownload(index, processedName)}
                     className="flex-shrink-0"
                   >
                     <Download className="w-5 h-5" />
@@ -104,9 +150,11 @@ const DownloadPage = () => {
             </Button>
           )}
 
-          {files.length === 1 && (
+          {files.length === 1 && fileUrls.length === 1 && (
             <Button
-              onClick={() => handleDownload(files[0])}
+              onClick={() =>
+                handleDownload(0, files[0].replace(/\.[^/.]+$/, "_processado.pdf"))
+              }
               className="w-full mb-4"
               size="lg"
             >
