@@ -105,9 +105,6 @@ const ImportFilePage = () => {
             <Link to="/payment" className="text-muted-foreground hover:text-foreground transition-colors text-sm">
               Planos
             </Link>
-            <Button variant="ghost" size="sm">
-              Entrar
-            </Button>
           </nav>
         </div>
       </header>
