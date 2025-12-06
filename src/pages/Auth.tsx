@@ -21,6 +21,7 @@ const Auth = () => {
 
     try {
       if (isLogin) {
+        // --- 1. LÓGICA DE LOGIN ---
         const { data, error } = await supabase.auth.signInWithPassword({
           email,
           password,
@@ -30,25 +31,24 @@ const Auth = () => {
         
         toast({
           title: "Login realizado com sucesso!",
-          description: "Redirecionando para o dashboard...",
+          description: "Redirecionando para a importação de arquivo...", // Descrição atualizada
         });
         
-        // Redirect to external dashboard with auth token
+        // Redirecionamento INTERNO para a rota /import
         if (data.session) {
-          const dashboardUrl = new URL('https://dashboard-scizonai.vercel.app/');
-          dashboardUrl.searchParams.set('token', data.session.access_token);
-          dashboardUrl.searchParams.set('email', email);
-          
           setTimeout(() => {
-            window.location.href = dashboardUrl.toString();
+            navigate("/import"); // Redireciona para /import
           }, 1000);
         }
+        
       } else {
+        // --- 2. LÓGICA DE CADASTRO (SIGN UP) ---
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
-            emailRedirectTo: `https://dashboardscizonai.vercel.app/dashboard/default`,
+            // Este URL é necessário para a validação por email do Supabase
+            emailRedirectTo: `https://dashboardscizonai.vercel.app/dashboard/default`, 
           },
         });
         
@@ -56,22 +56,18 @@ const Auth = () => {
         
         toast({
           title: "Conta criada com sucesso!",
-          description: "Redirecionando para o dashboard...",
+          description: "Redirecionando para a importação de arquivo...", // Descrição atualizada
         });
         
-        // Redirect to external dashboard with auth token
+        // Redirecionamento INTERNO para a rota /import
         if (data.session) {
-          const dashboardUrl = new URL('https://dashboard-scizonai.vercel.app/');
-          dashboardUrl.searchParams.set('token', data.session.access_token);
-          dashboardUrl.searchParams.set('email', email);
-          
           setTimeout(() => {
-            window.location.href = dashboardUrl.toString();
+            navigate("/import"); // Redireciona para /import
           }, 1000);
         } else {
-          // If no session (email confirmation required), redirect to local dashboard
+          // Caso a confirmação por email seja necessária (sem session), ainda redireciona para /import
           setTimeout(() => {
-            navigate("/dashboard");
+            navigate("/import"); // Redireciona para /import
           }, 1000);
         }
       }
