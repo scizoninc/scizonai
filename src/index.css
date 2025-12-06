@@ -9,7 +9,85 @@ All colors MUST be HSL.
 */
 
 @layer base {
-   * {
+  :root {
+    /* Cores ATUALIZADAS (baseadas no index-add.css) */
+    --background: 0 0% 5%;
+    --foreground: 0 0% 95%;
+
+    --card: 0 0% 8%;
+    --card-foreground: 0 0% 95%;
+
+    --popover: 0 0% 8%;
+    --popover-foreground: 0 0% 95%;
+
+    --primary: 0 0% 95%;
+    --primary-foreground: 0 0% 5%;
+
+    --secondary: 0 0% 12%;
+    --secondary-foreground: 0 0% 80%;
+
+    --muted: 0 0% 12%;
+    --muted-foreground: 0 0% 50%;
+
+    --accent: 0 0% 20%;
+    --accent-foreground: 0 0% 95%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 95%;
+
+    --border: 0 0% 18%;
+    --input: 0 0% 18%;
+    --ring: 0 0% 50%;
+
+    --radius: 0.75rem;
+
+    /* Tokens Customizados (Novos) */
+    --surface: 0 0% 10%;
+    --surface-hover: 0 0% 14%;
+
+    --sidebar-background: 0 0% 7%;
+    --sidebar-foreground: 0 0% 90%;
+    --sidebar-primary: 0 0% 95%;
+    --sidebar-primary-foreground: 0 0% 5%;
+    --sidebar-accent: 0 0% 15%;
+    --sidebar-accent-foreground: 0 0% 90%;
+    --sidebar-border: 0 0% 18%;
+    --sidebar-ring: 0 0% 50%;
+  }
+
+  .dark {
+    /* Cores ATUALIZADAS (baseadas no index-add.css) */
+    --background: 0 0% 5%;
+    --foreground: 0 0% 95%;
+    --card: 0 0% 8%;
+    --card-foreground: 0 0% 95%;
+    --popover: 0 0% 8%;
+    --popover-foreground: 0 0% 95%;
+    --primary: 0 0% 95%;
+    --primary-foreground: 0 0% 5%;
+    --secondary: 0 0% 12%;
+    --secondary-foreground: 0 0% 80%;
+    --muted: 0 0% 12%;
+    --muted-foreground: 0 0% 50%;
+    --accent: 0 0% 20%;
+    --accent-foreground: 0 0% 95%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 95%;
+    --border: 0 0% 18%;
+    --input: 0 0% 18%;
+    --ring: 0 0% 50%;
+    --sidebar-background: 0 0% 7%;
+    --sidebar-foreground: 0 0% 90%;
+    --sidebar-primary: 0 0% 95%;
+    --sidebar-primary-foreground: 0 0% 5%;
+    --sidebar-accent: 0 0% 15%;
+    --sidebar-accent-foreground: 0 0% 90%;
+    --sidebar-border: 0 0% 18%;
+    --sidebar-ring: 0 0% 50%;
+  }
+
+  /* Estilos base (Mantidos) */
+  * {
     @apply border-border;
   }
 
@@ -24,89 +102,6 @@ All colors MUST be HSL.
 
   code, pre, .mono {
     font-family: 'JetBrains Mono', monospace;
-  }
-
-  :root {
-    --background: 0 0% 0%;
-    --foreground: 0 0% 100%;
-
-    --card: 0 0% 5%;
-    --card-foreground: 0 0% 100%;
-
-    --popover: 0 0% 0%;
-    --popover-foreground: 0 0% 100%;
-
-    --primary: 0 0% 100%;
-    --primary-foreground: 0 0% 0%;
-
-    --secondary: 0 0% 10%;
-    --secondary-foreground: 0 0% 100%;
-
-    --muted: 0 0% 10%;
-    --muted-foreground: 0 0% 65%;
-
-    --accent: 0 0% 100%;
-    --accent-foreground: 0 0% 0%;
-
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 100%;
-
-    --border: 0 0% 15%;
-    --input: 0 0% 15%;
-    --ring: 0 0% 100%;
-
-    --radius: 0.75rem;
-
-    --surface: 0 0% 10%;
-    --surface-hover: 0 0% 14%;
-
-    --sidebar-background: 0 0% 0%;
-    --sidebar-foreground: 0 0% 100%;
-    --sidebar-primary: 0 0% 100%;
-    --sidebar-primary-foreground: 0 0% 0%;
-    --sidebar-accent: 0 0% 10%;
-    --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 0 0% 15%;
-    --sidebar-ring: 0 0% 100%;
-  }
-
-  .dark {
-    --background: 0 0% 0%;
-    --foreground: 0 0% 100%;
-
-    --card: 0 0% 5%;
-    --card-foreground: 0 0% 100%;
-
-    --popover: 0 0% 0%;
-    --popover-foreground: 0 0% 100%;
-
-    --primary: 0 0% 100%;
-    --primary-foreground: 0 0% 0%;
-
-    --secondary: 0 0% 10%;
-    --secondary-foreground: 0 0% 100%;
-
-    --muted: 0 0% 10%;
-    --muted-foreground: 0 0% 65%;
-
-    --accent: 0 0% 100%;
-    --accent-foreground: 0 0% 0%;
-
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 100%;
-
-    --border: 0 0% 15%;
-    --input: 0 0% 15%;
-    --ring: 0 0% 100%;
-    
-    --sidebar-background: 0 0% 0%;
-    --sidebar-foreground: 0 0% 100%;
-    --sidebar-primary: 0 0% 100%;
-    --sidebar-primary-foreground: 0 0% 0%;
-    --sidebar-accent: 0 0% 10%;
-    --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 0 0% 15%;
-    --sidebar-ring: 0 0% 100%;
   }
 }
 
