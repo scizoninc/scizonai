@@ -34,7 +34,7 @@ const Landing = () => {
             {/* NOVO BOTÃO: Plans */}
             <Button
               variant="outline"
-              onClick={() => navigate("/plans")}
+              onClick={() => navigate("/payment")}
               className="animate-fade-in hover:bg-muted/50 transition-all duration-300"
             >
               Plans
