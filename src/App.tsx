@@ -11,6 +11,8 @@ import Payment from "./pages/Payment";
 import ImportFile from "./pages/ImportFile";
 import Checkout from "./pages/Checkout";
 import Download from "./pages/Download";
+import Outdoor from "./pages/Outdoor";
+import Loading from "./pages/Loading";
 
 const queryClient = new QueryClient();
 
@@ -28,6 +30,8 @@ const App = () => (
           <Route path="/import" element={<ImportFile />} />
           <Route path="/checkout" element={<Checkout />} />
           <Route path="/download" element={<Download />} />
+          <Route path="/loading" element={<Loading />} />
+          <Route path="/outdoor" element={<Outdoor />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
