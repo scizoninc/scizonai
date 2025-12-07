@@ -70,27 +70,23 @@ const ImportFilePage = () => {
   const handleProcessFiles = async () => {
     if (files.length === 0) return;
 
-    // Apenas os arquivos que estão prontos
     const readyFiles = files.filter((f) => f.status === "ready" && f.file);
-
     if (readyFiles.length === 0) {
       toast({ title: "Nenhum arquivo válido", description: "Selecione arquivos para processar." });
       return;
     }
 
-    // Cria form data (pode ajustar chaves de campo conforme seu backend)
     const form = new FormData();
     readyFiles.forEach((f) => {
       if (f.file) form.append("files", f.file, f.name);
     });
 
-    // Atualiza UI para "uploading"
     setFiles((prev) =>
       prev.map((f) => (readyFiles.find((r) => r.id === f.id) ? { ...f, status: "uploading", progress: 5 } : f))
     );
 
     try {
-      const resp = await fetch("/api/upload", {
+      const resp = await fetch("/api/energent/run", {
         method: "POST",
         body: form,
       });
@@ -100,17 +96,15 @@ const ImportFilePage = () => {
         throw new Error(err || "Erro no upload");
       }
 
-      const data = await resp.json(); // { jobId: string }
+      const data = await resp.json(); // { jobId }
       const jobId = data.jobId;
       toast({ title: "Processamento iniciado", description: "Seu arquivo está sendo processado." });
 
-      // marca arquivos como success localmente (o processamento acontece no backend)
       setFiles((prev) =>
         prev.map((f) => (readyFiles.find((r) => r.id === f.id) ? { ...f, status: "success", progress: 100 } : f))
       );
 
-      // redireciona para a página de loading com jobId
-      navigate("/loading", { state: { jobId } });
+      navigate("/loading", { state: { jobId, files: readyFiles.map((r) => r.name) } });
     } catch (err: any) {
       console.error(err);
       setFiles((prev) => prev.map((f) => (f.status === "uploading" ? { ...f, status: "error", progress: 0 } : f)));
@@ -123,14 +117,7 @@ const ImportFilePage = () => {
       {/* Header */}
       <header className="border-b border-border/30">
         <div className="container mx-auto px-6 py-4 flex items-center justify-between">
-          <Link to="/" className="text-xl font-semibold text-foreground">
-            ScizonAI
-          </Link>
-          <nav className="flex items-center gap-4">
-            <Link to="/payment" className="text-muted-foreground hover:text-foreground transition-colors text-sm">
-              Planos
-            </Link>
-          </nav>
+          <Link to="/" className="text-xl font-semibold text-foreground">ScizonAI</Link>
         </div>
       </header>
 
@@ -148,31 +135,17 @@ const ImportFilePage = () => {
             onDrop={handleDrop}
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
-            className={`relative border-2 border-dashed rounded-2xl p-12 text-center transition-all duration-300 animate-slide-up ${
-              isDragging ? "border-foreground/50 bg-muted/20" : "border-border hover:border-muted-foreground/50 bg-card/30"
-            }`}
+            className={`relative border-2 border-dashed rounded-2xl p-12 text-center transition-all duration-300 animate-slide-up ${isDragging ? "border-foreground/50 bg-muted/20" : "border-border hover:border-muted-foreground/50 bg-card/30"}`}
           >
-            <input
-              type="file"
-              multiple
-              onChange={(e) => e.target.files && handleFiles(e.target.files)}
-              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-            />
-
+            <input type="file" multiple onChange={(e) => e.target.files && handleFiles(e.target.files)} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
             <div className="flex flex-col items-center gap-4">
-              <div
-                className={`w-16 h-16 rounded-2xl bg-muted flex items-center justify-center transition-all duration-300 ${
-                  isDragging ? "scale-110" : ""
-                }`}
-              >
+              <div className={`w-16 h-16 rounded-2xl bg-muted flex items-center justify-center transition-all duration-300 ${isDragging ? "scale-110" : ""}`}>
                 <Upload className="w-8 h-8 text-muted-foreground" />
               </div>
-
               <div>
                 <p className="text-foreground font-medium mb-1">Solte os arquivos aqui</p>
                 <p className="text-muted-foreground text-sm">ou clique para navegar</p>
               </div>
-
               <p className="text-muted-foreground text-xs">PDF, CSV, XLSX, JSON • Máx 50MB por arquivo</p>
             </div>
           </div>
@@ -181,16 +154,11 @@ const ImportFilePage = () => {
           {files.length > 0 && (
             <div className="mt-8 space-y-3 animate-fade-in">
               <h3 className="text-sm font-medium text-foreground mb-4">Arquivos ({files.length})</h3>
-
               {files.map((file) => (
-                <div
-                  key={file.id}
-                  className="bg-card border border-border rounded-xl p-4 flex items-center gap-4 transition-all hover:border-muted-foreground/30"
-                >
+                <div key={file.id} className="bg-card border border-border rounded-xl p-4 flex items-center gap-4">
                   <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
                     <FileText className="w-5 h-5 text-muted-foreground" />
                   </div>
-
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <p className="text-foreground text-sm font-medium truncate">{file.name}</p>
@@ -198,7 +166,6 @@ const ImportFilePage = () => {
                       {file.status === "error" && <AlertCircle className="w-4 h-4 text-destructive flex-shrink-0" />}
                     </div>
                     <p className="text-muted-foreground text-xs">{formatFileSize(file.size)}</p>
-
                     {file.status === "uploading" && (
                       <div className="mt-2 h-1 bg-muted rounded-full overflow-hidden">
                         <div className="h-full bg-foreground transition-all duration-300 rounded-full" style={{ width: `${file.progress}%` }} />
@@ -217,9 +184,7 @@ const ImportFilePage = () => {
           {/* Action Button */}
           {files.length > 0 && files.every((f) => f.status !== "uploading") && (
             <div className="mt-8 text-center animate-fade-in">
-              <Button variant="default" size="lg" onClick={handleProcessFiles}>
-                Processar arquivos
-              </Button>
+              <Button variant="default" size="lg" onClick={handleProcessFiles}>Processar arquivos</Button>
             </div>
           )}
         </div>
