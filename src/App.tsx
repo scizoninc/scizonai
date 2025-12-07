@@ -14,6 +14,7 @@ import Download from "./pages/Download";
 import Outdoor from "./pages/Outdoor";
 import Loading from "./pages/Loading";
 
+
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -33,6 +34,7 @@ const App = () => (
           <Route path="/loading" element={<Loading />} />
           <Route path="/outdoor" element={<Outdoor />} />
           <Route path="*" element={<NotFound />} />
+          <Route path="/checkout/:planId" element={<Checkout />} /> 
         </Routes>
       </BrowserRouter>
     </TooltipProvider>
