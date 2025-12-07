@@ -5,8 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 
+// ... (detectCardBrand, formatCardNumber, formatExpiry mantidos)
 function detectCardBrand(cardNumber: string) {
-  const num = cardNumber.replace(/\s+/g, "");
+  const num = cardNumber.replace(/\s+/g, "").replace(/[^0-9]/gi, "");
   if (/^4/.test(num)) return "Visa";
   if (/^(5[1-5]|2[2-7])/.test(num)) return "Mastercard";
   if (/^3[47]/.test(num)) return "Amex";
@@ -15,8 +16,16 @@ function detectCardBrand(cardNumber: string) {
   if (/^36|38|300|301|302|303|304|305/.test(num)) return "Diners";
   return "Desconhecida";
 }
-
+const formatCardNumber = (value: string) => {
+  const v = value.replace(/\s+/g, "").replace(/[^0-9]/gi, "");
+  return v.replace(/(.{4})/g, "$1 ").trim();
+};
+const formatExpiry = (v: string) => {
+  const x = v.replace(/\D/g, "");
+  return x.length >= 3 ? x.substring(0, 2) + "/" + x.substring(2, 4) : x;
+};
 type PaymentMethod = "card" | "pix" | null;
+// ...
 
 const CheckoutPage = () => {
   const [selectedMethod, setSelectedMethod] = useState<PaymentMethod>(null);
@@ -26,48 +35,41 @@ const CheckoutPage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  // 🛑 RECEBE OS DADOS DA IMPORTFILEPAGE
   const files: string[] = location.state?.files || [];
   const fileUrls: string[] = location.state?.fileUrls || [];
-  const jobId: string = location.state?.jobId;
 
   const brand = useMemo(() => detectCardBrand(cardData.number), [cardData.number]);
 
-  const formatCardNumber = (value: string) => {
-    const v = value.replace(/\s+/g, "").replace(/[^0-9]/gi, "");
-    return v.replace(/(.{4})/g, "$1 ").trim();
-  };
-  const formatExpiry = (v: string) => {
-    const x = v.replace(/\D/g, "");
-    return x.length >= 3 ? x.substring(0, 2) + "/" + x.substring(2, 4) : x;
-  };
-
-  // 🛑 FUNÇÃO MODIFICADA: Simula o pagamento e redireciona.
+  // 🛑 CORREÇÃO PRINCIPAL AQUI: Repassa os dados para DownloadPage no sucesso
   const handlePayment = async () => {
     if (!selectedMethod) {
       toast({ title: "Selecione um método", description: "Escolha entre cartão ou PIX.", variant: "destructive" });
       return;
     }
     if (selectedMethod === "card") {
-      // Validação mínima para o cartão (número)
       if (cardData.number.replace(/\s/g, "").length < 13) {
         toast({ title: "Cartão inválido", description: "Informe um número válido", variant: "destructive" });
         return;
       }
-      // Adicione aqui mais validações (nome, validade, CVV) se necessário para a simulação.
     }
 
     setIsProcessing(true);
 
-    // 1. Simula um breve atraso de processamento (2 segundos)
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    try {
+      // Simula o pagamento
+      await new Promise(resolve => setTimeout(resolve, 2000)); 
 
-    // 2. Simula o sucesso do pagamento
-    toast({ title: "Pagamento simulado!", description: "A transação foi registrada como sucesso.", variant: "success" });
-    
-    // 3. Redireciona para a página de download com os dados necessários
-    navigate("/download", { state: { files, fileUrls } });
-
-    setIsProcessing(false);
+      toast({ title: "Pagamento simulado!", description: "A transação foi registrada como sucesso.", variant: "success" });
+      
+      // Redireciona para /download, repassando os dados dos arquivos e URLs
+      navigate("/download", { state: { files, fileUrls } });
+    } catch (err: any) {
+      console.error("Pagamento error", err);
+      toast({ title: "Erro no pagamento", description: "Simulação de falha no pagamento", variant: "destructive" });
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   return (
@@ -136,8 +138,8 @@ const CheckoutPage = () => {
             </div>
           )}
 
-          <Button onClick={handlePayment} disabled={!selectedMethod || isProcessing} className="w-full" size="lg">
-            {isProcessing ? (<><Loader2 className="w-4 h-4 animate-spin mr-2" />Processando...</>) : ("Pagar R$ 9,90")}
+          <Button onClick={handlePayment} disabled={!selectedMethod || isProcessing || files.length === 0} className="w-full" size="lg">
+            {isProcessing ? (<><Loader2 className="w-4 h-4 animate-spin mr-2" />Processando pagamento...</>) : ("Pagar R$ 9,90")}
           </Button>
 
           <p className="text-xs text-muted-foreground text-center mt-6">Pagamento seguro e criptografado</p>

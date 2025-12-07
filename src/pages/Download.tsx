@@ -1,3 +1,4 @@
+// src/pages/DownloadPage.tsx
 import { Download, CheckCircle, FileText, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link, useLocation } from "react-router-dom";
@@ -23,23 +24,7 @@ const DownloadPage = () => {
     
     console.log(`Simulando download do arquivo: ${originalName} (URL: ${fileUrls[index]})`);
     
-    // Em um ambiente real, o código original abaixo faria o download:
-    /*
-    try {
-      const res = await fetch(`/api/energent/download?url=${encodeURIComponent(fileUrls[index])}`);
-      if (!res.ok) throw new Error("Erro ao baixar");
-      const blob = await res.blob();
-      const link = document.createElement("a");
-      link.href = URL.createObjectURL(blob);
-      link.download = processedName;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-    } catch (err) {
-      console.error("download error", err);
-      toast({ title: "Erro", description: "Não foi possível baixar o arquivo.", variant: "destructive" });
-    }
-    */
+    // O código de download real está comentado para simulação.
   };
 
   return (

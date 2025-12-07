@@ -17,7 +17,7 @@ interface UploadedFile {
 const ImportFilePage = () => {
   const [files, setFiles] = useState<UploadedFile[]>([]);
   const [isDragging, setIsDragging] = useState(false);
-  const [isProcessing, setIsProcessing] = useState(false); // Novo estado
+  const [isProcessing, setIsProcessing] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -67,7 +67,7 @@ const ImportFilePage = () => {
     setFiles((prev) => prev.filter((f) => f.id !== id));
   };
 
-  // 🛑 CORRIGIDO: Agora coleta os nomes dos arquivos upados e redireciona para /loading
+  // 🛑 CORREÇÃO PRINCIPAL AQUI: Processamento rápido e envio de dados para Checkout
   const handleProcessFiles = async () => {
     const readyFiles = files.filter((f) => f.status !== "error" && f.file);
     
@@ -77,16 +77,16 @@ const ImportFilePage = () => {
     }
 
     setIsProcessing(true);
-    toast({ title: "Upload iniciado", description: "Enviando arquivos para processamento." });
+    toast({ title: "Processamento simulado", description: "Arquivos processados e prontos para pagamento." });
     
-    // Simulação de tempo de upload
-    await new Promise(resolve => setTimeout(resolve, 1000)); 
+    await new Promise(resolve => setTimeout(resolve, 1500)); 
 
-    const jobId = crypto.randomUUID(); 
-    const fileNames = readyFiles.map(r => r.name); // <--- Coleta os nomes
+    const fileNames = readyFiles.map(r => r.name);
+    // Gera URLs de download simuladas que serão repassadas
+    const simulatedFileUrls = fileNames.map((_, i) => `/simulated-download-${i}`); 
 
-    // Redireciona para /loading com os nomes dos arquivos
-    navigate("/loading", { state: { jobId, files: fileNames } });
+    // Redireciona para /checkout com os nomes dos arquivos e as URLs
+    navigate("/checkout", { state: { files: fileNames, fileUrls: simulatedFileUrls } });
     setIsProcessing(false);
   };
 
@@ -136,7 +136,7 @@ const ImportFilePage = () => {
                 <div key={file.id} className="bg-card border border-border rounded-xl p-4 flex items-center gap-4">
                   <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
                     <FileText className="w-5 h-5 text-muted-foreground" />
-                </div>
+                  </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <p className="text-foreground text-sm font-medium truncate">{file.name}</p>
@@ -149,7 +149,7 @@ const ImportFilePage = () => {
                         <div className="h-full bg-foreground transition-all duration-300 rounded-full" style={{ width: `${file.progress}%` }} />
                       </div>
                     )}
-                </div>
+                  </div>
 
                   <Button variant="ghost" size="icon" onClick={() => removeFile(file.id)} className="flex-shrink-0 hover:text-destructive">
                     <X className="w-4 h-4" />
@@ -163,7 +163,7 @@ const ImportFilePage = () => {
           {files.length > 0 && files.every((f) => f.status !== "uploading") && (
             <div className="mt-8 text-center animate-fade-in">
               <Button variant="default" size="lg" onClick={handleProcessFiles} disabled={isProcessing}>
-                {isProcessing ? (<><Loader2 className="w-4 h-4 animate-spin mr-2" />Enviando...</>) : "Processar arquivos"}
+                {isProcessing ? (<><Loader2 className="w-4 h-4 animate-spin mr-2" />Processando...</>) : "Processar e Pagar"}
               </Button>
             </div>
           )}
