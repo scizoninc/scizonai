@@ -21,12 +21,26 @@ const Landing = () => {
             <Sparkles className="h-6 w-6 animate-spin-slow" />
             <span className="text-2xl font-bold">Scizon AI</span>
           </div>
+          <Button
+            variant="outline"
+            onClick={() => navigate("/plans")}
+            className="animate-fade-in hover:bg-muted/50 transition-all duration-300"
+          >
+            Plans
+          </Button>
           <Button 
             variant="outline" 
             onClick={() => navigate("/auth")}
             className="animate-fade-in hover:bg-primary hover:text-primary-foreground transition-all duration-300"
           >
             Login
+          </Button>
+          <Button 
+            variant="outline" 
+            onClick={() => navigate("/outdoor")}
+            className="animate-fade-in hover:bg-primary hover:text-primary-foreground transition-all duration-300"
+          >
+            Outdoor
           </Button>
         </div>
       </header>
