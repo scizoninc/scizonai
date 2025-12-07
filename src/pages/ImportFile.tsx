@@ -77,7 +77,7 @@ const ImportFilePage = () => {
     }
 
     setIsProcessing(true);
-    toast({ title: "Processamento simulado", description: "Arquivos processados e prontos para pagamento." });
+    toast({ title: "Processamento simulado", description: "Arquivos processados." });
     
     await new Promise(resolve => setTimeout(resolve, 1500)); 
 
@@ -163,7 +163,7 @@ const ImportFilePage = () => {
           {files.length > 0 && files.every((f) => f.status !== "uploading") && (
             <div className="mt-8 text-center animate-fade-in">
               <Button variant="default" size="lg" onClick={handleProcessFiles} disabled={isProcessing}>
-                {isProcessing ? (<><Loader2 className="w-4 h-4 animate-spin mr-2" />Processando...</>) : "Processar e Pagar"}
+                {isProcessing ? (<><Loader2 className="w-4 h-4 animate-spin mr-2" />Processando...</>) : "Processar"}
               </Button>
             </div>
           )}
