@@ -1,6 +1,6 @@
 // src/pages/ImportFilePage.tsx
 import { useState, useCallback } from "react";
-import { Upload, FileText, X, CheckCircle, AlertCircle } from "lucide-react";
+import { Upload, FileText, X, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link, useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
@@ -17,6 +17,7 @@ interface UploadedFile {
 const ImportFilePage = () => {
   const [files, setFiles] = useState<UploadedFile[]>([]);
   const [isDragging, setIsDragging] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false); // Novo estado
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -66,16 +67,27 @@ const ImportFilePage = () => {
     setFiles((prev) => prev.filter((f) => f.id !== id));
   };
 
-  // MODIFICAÇÃO: Esta função foi drasticamente simplificada para apenas redirecionar para /checkout
+  // 🛑 CORRIGIDO: Agora coleta os nomes dos arquivos upados e redireciona para /loading
   const handleProcessFiles = async () => {
-    if (files.length === 0) {
-      toast({ title: "Nenhum arquivo", description: "Selecione arquivos antes de prosseguir." });
+    const readyFiles = files.filter((f) => f.status !== "error" && f.file);
+    
+    if (readyFiles.length === 0) {
+      toast({ title: "Nenhum arquivo válido", description: "Selecione arquivos para processar." });
       return;
     }
 
-    // Remove toda a lógica de upload, API e Job ID.
-    // Redireciona diretamente para o Checkout.
-    navigate("/checkout");
+    setIsProcessing(true);
+    toast({ title: "Upload iniciado", description: "Enviando arquivos para processamento." });
+    
+    // Simulação de tempo de upload
+    await new Promise(resolve => setTimeout(resolve, 1000)); 
+
+    const jobId = crypto.randomUUID(); 
+    const fileNames = readyFiles.map(r => r.name); // <--- Coleta os nomes
+
+    // Redireciona para /loading com os nomes dos arquivos
+    navigate("/loading", { state: { jobId, files: fileNames } });
+    setIsProcessing(false);
   };
 
   return (
@@ -124,20 +136,20 @@ const ImportFilePage = () => {
                 <div key={file.id} className="bg-card border border-border rounded-xl p-4 flex items-center gap-4">
                   <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
                     <FileText className="w-5 h-5 text-muted-foreground" />
-                  </div>
+                </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <p className="text-foreground text-sm font-medium truncate">{file.name}</p>
                       {file.status === "success" && <CheckCircle className="w-4 h-4 text-foreground flex-shrink-0" />}
                       {file.status === "error" && <AlertCircle className="w-4 h-4 text-destructive flex-shrink-0" />}
-                  </div>
+                    </div>
                     <p className="text-muted-foreground text-xs">{formatFileSize(file.size)}</p>
                     {file.status === "uploading" && (
                       <div className="mt-2 h-1 bg-muted rounded-full overflow-hidden">
                         <div className="h-full bg-foreground transition-all duration-300 rounded-full" style={{ width: `${file.progress}%` }} />
                       </div>
                     )}
-                  </div>
+                </div>
 
                   <Button variant="ghost" size="icon" onClick={() => removeFile(file.id)} className="flex-shrink-0 hover:text-destructive">
                     <X className="w-4 h-4" />
@@ -150,7 +162,9 @@ const ImportFilePage = () => {
           {/* Action Button */}
           {files.length > 0 && files.every((f) => f.status !== "uploading") && (
             <div className="mt-8 text-center animate-fade-in">
-              <Button variant="default" size="lg" onClick={handleProcessFiles}>Processar arquivos</Button>
+              <Button variant="default" size="lg" onClick={handleProcessFiles} disabled={isProcessing}>
+                {isProcessing ? (<><Loader2 className="w-4 h-4 animate-spin mr-2" />Enviando...</>) : "Processar arquivos"}
+              </Button>
             </div>
           )}
         </div>
