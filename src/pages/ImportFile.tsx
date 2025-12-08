@@ -4,6 +4,8 @@ import { Upload, FileText, X, CheckCircle, AlertCircle, Loader2 } from "lucide-r
 import { Button } from "@/components/ui/button";
 import { Link, useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
+// 🟢 Importação de componentes UI (simulados, mas necessários para o TextArea)
+import { Textarea } from "@/components/ui/textarea"; // Assumindo que você tem um componente Textarea
 
 interface UploadedFile {
   id: string;
@@ -14,10 +16,13 @@ interface UploadedFile {
   file?: File;
 }
 
+
 const ImportFilePage = () => {
   const [files, setFiles] = useState<UploadedFile[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  // 🟢 Novo estado para o prompt do usuário
+  const [userPrompt, setUserPrompt] = useState("");
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -67,7 +72,7 @@ const ImportFilePage = () => {
     setFiles((prev) => prev.filter((f) => f.id !== id));
   };
 
-  // 🛑 CORREÇÃO PRINCIPAL AQUI: Processamento rápido e envio de dados para Checkout
+  // 🟢 Função de Processamento e Redirecionamento para /output
   const handleProcessFiles = async () => {
     const readyFiles = files.filter((f) => f.status !== "error" && f.file);
     
@@ -75,24 +80,36 @@ const ImportFilePage = () => {
       toast({ title: "Nenhum arquivo válido", description: "Selecione arquivos para processar." });
       return;
     }
+    if (!userPrompt.trim()) {
+      toast({ title: "Prompt necessário", description: "Por favor, forneça um prompt para a análise do relatório." });
+      return;
+    }
+
 
     setIsProcessing(true);
-    toast({ title: "Processamento simulado", description: "Arquivos processados." });
+    toast({ title: "Enviando para análise", description: "Seus arquivos e prompt estão sendo processados pelo GPT..." });
     
+    // Simulação de API Call para o GPT (1.5 segundos)
     await new Promise(resolve => setTimeout(resolve, 1500)); 
 
     const fileNames = readyFiles.map(r => r.name);
-    // Gera URLs de download simuladas que serão repassadas
-    const simulatedFileUrls = fileNames.map((_, i) => `/simulated-download-${i}`); 
+    const simulatedFileUrls = readyFiles.map((_, i) => `/processed-data/file_${i}-${readyFiles[i].id}`); 
 
-    // Redireciona para /checkout com os nomes dos arquivos e as URLs
-    navigate("/checkout", { state: { files: fileNames, fileUrls: simulatedFileUrls } });
+    // Redireciona para a página de Output com todos os dados necessários
+    navigate("/output", { 
+      state: { 
+        files: fileNames, 
+        fileUrls: simulatedFileUrls, 
+        prompt: userPrompt 
+      } 
+    });
+    
     setIsProcessing(false);
   };
 
   return (
     <main className="min-h-screen bg-background">
-      {/* Header */}
+      {/* Header (Mantido) */}
       <header className="border-b border-border/30">
         <div className="container mx-auto px-6 py-4 flex items-center justify-between">
           <Link to="/" className="text-xl font-semibold text-foreground">ScizonAI</Link>
@@ -102,13 +119,13 @@ const ImportFilePage = () => {
       {/* Content */}
       <section className="container mx-auto px-6 py-20">
         <div className="max-w-2xl mx-auto">
-          {/* Title */}
+          {/* Title (Mantido) */}
           <div className="text-center mb-12 animate-fade-in">
             <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-4">Importar arquivos</h1>
             <p className="text-muted-foreground text-lg">Arraste seus arquivos ou clique para selecionar</p>
           </div>
 
-          {/* Drop Zone */}
+          {/* Drop Zone (Mantido) */}
           <div
             onDrop={handleDrop}
             onDragOver={handleDragOver}
@@ -128,7 +145,7 @@ const ImportFilePage = () => {
             </div>
           </div>
 
-          {/* File List */}
+          {/* File List (Mantido) */}
           {files.length > 0 && (
             <div className="mt-8 space-y-3 animate-fade-in">
               <h3 className="text-sm font-medium text-foreground mb-4">Arquivos ({files.length})</h3>
@@ -142,13 +159,8 @@ const ImportFilePage = () => {
                       <p className="text-foreground text-sm font-medium truncate">{file.name}</p>
                       {file.status === "success" && <CheckCircle className="w-4 h-4 text-foreground flex-shrink-0" />}
                       {file.status === "error" && <AlertCircle className="w-4 h-4 text-destructive flex-shrink-0" />}
-                    </div>
+                  </div>
                     <p className="text-muted-foreground text-xs">{formatFileSize(file.size)}</p>
-                    {file.status === "uploading" && (
-                      <div className="mt-2 h-1 bg-muted rounded-full overflow-hidden">
-                        <div className="h-full bg-foreground transition-all duration-300 rounded-full" style={{ width: `${file.progress}%` }} />
-                      </div>
-                    )}
                   </div>
 
                   <Button variant="ghost" size="icon" onClick={() => removeFile(file.id)} className="flex-shrink-0 hover:text-destructive">
@@ -158,12 +170,32 @@ const ImportFilePage = () => {
               ))}
             </div>
           )}
+          
+          {/* 🟢 Aba de Prompt */}
+          {files.length > 0 && files.every((f) => f.status !== "uploading") && (
+            <div className="mt-8 space-y-4 p-6 bg-card border border-border rounded-xl animate-fade-in">
+              <h3 className="text-lg font-semibold text-foreground">Instruções para a Análise (Prompt GPT)</h3>
+              <p className="text-muted-foreground text-sm">Descreva o tipo de análise que você deseja que a IA realize com base nos arquivos importados.</p>
+              <Textarea 
+                placeholder="Ex: 'Crie um resumo executivo dos resultados da campanha mais eficaz e sugira três ações para otimizar o CPM médio.'"
+                value={userPrompt}
+                onChange={(e) => setUserPrompt(e.target.value)}
+                rows={5}
+              />
+            </div>
+          )}
+
 
           {/* Action Button */}
           {files.length > 0 && files.every((f) => f.status !== "uploading") && (
             <div className="mt-8 text-center animate-fade-in">
-              <Button variant="default" size="lg" onClick={handleProcessFiles} disabled={isProcessing}>
-                {isProcessing ? (<><Loader2 className="w-4 h-4 animate-spin mr-2" />Processando...</>) : "Processar"}
+              <Button 
+                variant="default" 
+                size="lg" 
+                onClick={handleProcessFiles} 
+                disabled={isProcessing || !userPrompt.trim()} // Desabilita se não houver prompt
+              >
+                {isProcessing ? (<><Loader2 className="w-4 h-4 animate-spin mr-2" />Processando...</>) : "Gerar Relatório com IA"}
               </Button>
             </div>
           )}

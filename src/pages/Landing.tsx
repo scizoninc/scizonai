@@ -85,6 +85,7 @@ const Landing = () => {
               <Button 
                 size="lg" 
                 variant="outline"
+                onClick={() => navigate("/auth")}
                 className="hover:bg-primary hover:text-primary-foreground transition-all duration-300"
               >
                 Ver demonstração
