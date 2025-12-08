@@ -7,34 +7,41 @@ import { CheckCircle, Download, Loader2, FileText, Sparkles, AlertCircle } from 
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"; 
 
-// 🟢 Configuração da Chave API (Assumindo VITE)
-// Em um projeto real, esta chave deve ser usada apenas no Backend.
-const API_KEY = import.meta.env.N_KEY; 
+// 🟢 CONFIGURAÇÃO DA CHAVE API (AJUSTADO PARA GEMINI)
+// Assumindo que a chave do Gemini está definida como VITE_GEMINI_API_KEY no .env.local
+const API_KEY = import.meta.env.VITE_GEMINI_API_KEY; 
 
-// 1. Simulação da Resposta do GPT
+// 1. Função de Simulação da Resposta do GEMINI (Dinâmica)
 const generateSimulatedReport = (prompt: string, files: string[]) => {
-  return `## Relatório de Análise de Mídia Exterior (GPT AI)
+    const firstFileName = files.length > 0 ? files[0] : "Nenhum arquivo";
+    const totalFiles = files.length;
+    
+    // Simulação de análise baseada no prompt
+    const specificAnalysis = prompt.toLowerCase().includes('cpm') 
+        ? "focado na otimização de custo por mil impressões (CPM), utilizando o poder de análise do modelo Gemini." 
+        : "com foco em posicionamento estratégico e análise de concorrência, processado pelo modelo de IA do Google.";
+
+    return `## Relatório de Análise Personalizada (Google Gemini)
 ---
-**Prompt de Análise:** "${prompt.slice(0, 100)}..."
+**Prompt Recebido:** "${prompt}"
 
-A análise dos ${files.length} arquivos fornecidos (${files.join(', ')}) revela insights cruciais para a otimização de suas campanhas de Outdoor. 
+Análise dos **${totalFiles}** arquivos fornecidos (ex: **${firstFileName}**).
+O relatório foi gerado com uma análise ${specificAnalysis}
 
-### 📈 Desempenho Chave
-Os dados processados indicam que o **Painel OOH-102** na Rua Principal 3 foi o de maior impacto no último ciclo, registrando um CPM 15% abaixo da média do portfólio. Este painel concentra 25% do total de impressões.
+### 💡 Resultados Personalizados
+1.  **Requisito do Prompt:** O modelo Gemini ajustou a saída para focar em **"${prompt.slice(0, 30)}..."**.
+2.  **Processamento Multimodal:** A análise envolveu a interpretação dos ${totalFiles} arquivos (assumindo que Gemini processou dados ou imagens) para otimizar a sua estratégia.
 
-### 💡 Recomendações de Otimização
-1.  **Concentração de Recursos:** Redirecione 10% do orçamento do Painel OOH-105 para OOH-102, aproveitando sua alta eficiência.
-2.  **Análise de Fluxo:** Sugere-se cruzar o horário de pico do Painel OOH-101 com dados demográficos de tráfego para entender a baixa conversão relatada.
-3.  **Sugestão Criativa:** O Prompt solicitou otimização de CPM. A IA sugere focar em criativos mais chamativos para painéis de baixo desempenho, aumentando a taxa de atenção.
-
-A IA da Scizon concluiu a análise em 45 segundos e gerou este resumo executivo formatado.`;
+### Conclusão
+A simulação mostra que o modelo Gemini processou sua entrada e gerou este resumo executivo único baseado no seu prompt e nos dados anexados.`;
 };
 
-// 2. Função de Chamada API (Simulada)
+
+// 2. Função de Chamada API (Simulada - Refletindo o Novo Contexto Gemini)
 const callGptApi = async (prompt: string, files: string[]): Promise<string> => {
-  // Se a chave não estiver presente, usamos a simulação, mas alertamos no console
+  // Usamos callGptApi apenas por convenção histórica, mas ela simula a chamada Gemini
   if (!API_KEY && import.meta.env.MODE === 'development') {
-    console.warn("Aviso: Chave API do GPT não configurada em .env.local. Usando simulação total.");
+    console.warn("Aviso: Chave API do Gemini não configurada. Usando simulação total.");
   }
   
   // Simulação de delay da resposta real da API
@@ -68,12 +75,12 @@ const OutputPage = () => {
       setIsTypingComplete(false);
 
       try {
-        // 🟢 Chamada real (simulada) que usa a API_KEY internamente
+        // Chamada real (simulada) que usa a API_KEY internamente
         const report = await callGptApi(prompt, files); 
         setFullReport(report);
       } catch (error) {
-        setFullReport("## Erro na Conexão com a IA\nNão foi possível obter a resposta do modelo. Verifique a chave API e a conexão de rede.");
-        console.error("Erro ao chamar a API do GPT:", error);
+        setFullReport("## Erro na Conexão com a IA\nNão foi possível obter a resposta do modelo Gemini. Verifique a chave API e a conexão de rede.");
+        console.error("Erro ao chamar a API do Gemini:", error);
       } finally {
         setIsLoading(false);
       }
@@ -138,7 +145,7 @@ const OutputPage = () => {
           {isLoading && (
             <div className="text-center mb-8">
               <Loader2 className="w-6 h-6 animate-spin text-primary mx-auto mb-2" />
-              <p className="text-sm text-muted-foreground">Conectando ao modelo GPT e processando os arquivos...</p>
+              <p className="text-sm text-muted-foreground">Conectando ao modelo Gemini e processando os arquivos...</p>
             </div>
           )}
 
