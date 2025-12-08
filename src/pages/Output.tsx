@@ -9,7 +9,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 
 // 🟢 Configuração da Chave API (Assumindo VITE)
 // Em um projeto real, esta chave deve ser usada apenas no Backend.
-const API_KEY = import.meta.env.VITE_OPENAI_API_KEY; 
+const API_KEY = import.meta.env.N_KEY; 
 
 // 1. Simulação da Resposta do GPT
 const generateSimulatedReport = (prompt: string, files: string[]) => {
