@@ -4,8 +4,7 @@ import { Upload, FileText, X, CheckCircle, AlertCircle, Loader2 } from "lucide-r
 import { Button } from "@/components/ui/button";
 import { Link, useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
-// 🟢 Importação de componentes UI (simulados, mas necessários para o TextArea)
-import { Textarea } from "@/components/ui/textarea"; // Assumindo que você tem um componente Textarea
+import { Textarea } from "@/components/ui/textarea";
 
 interface UploadedFile {
   id: string;
@@ -13,7 +12,7 @@ interface UploadedFile {
   size: number;
   status: "ready" | "uploading" | "success" | "error";
   progress: number;
-  file?: File;
+  file?: File; // O objeto File é crucial
 }
 
 
@@ -72,8 +71,9 @@ const ImportFilePage = () => {
     setFiles((prev) => prev.filter((f) => f.id !== id));
   };
 
-  // 🟢 Função de Processamento e Redirecionamento para /output
+  // 🟢 Função de Processamento e Redirecionamento (MODIFICADA)
   const handleProcessFiles = async () => {
+    // Filtra apenas arquivos prontos e que possuem o objeto File real
     const readyFiles = files.filter((f) => f.status !== "error" && f.file);
     
     if (readyFiles.length === 0) {
@@ -89,17 +89,18 @@ const ImportFilePage = () => {
     setIsProcessing(true);
     toast({ title: "Enviando para análise", description: "Seus arquivos e prompt estão sendo processados pelo GPT..." });
     
-    // Simulação de API Call para o GPT (1.5 segundos)
-    await new Promise(resolve => setTimeout(resolve, 1500)); 
+    // Simulação de delay
+    await new Promise(resolve => setTimeout(resolve, 500)); 
 
     const fileNames = readyFiles.map(r => r.name);
-    const simulatedFileUrls = readyFiles.map((_, i) => `/processed-data/file_${i}-${readyFiles[i].id}`); 
+    // ⚠️ EXTRÁI OS OBJETOS FILE REAIS PARA PASSAR AO OUTPUT
+    const fileObjects = readyFiles.map(r => r.file); 
 
     // Redireciona para a página de Output com todos os dados necessários
     navigate("/output", { 
       state: { 
-        files: fileNames, 
-        fileUrls: simulatedFileUrls, 
+        fileNames: fileNames, 
+        fileObjects: fileObjects, // 🟢 PASSANDO O OBJETO FILE AQUI!
         prompt: userPrompt 
       } 
     });
@@ -170,31 +171,31 @@ const ImportFilePage = () => {
               ))}
             </div>
           )}
-          
-          {/* 🟢 Aba de Prompt */}
-          {files.length > 0 && files.every((f) => f.status !== "uploading") && (
-            <div className="mt-8 space-y-4 p-6 bg-card border border-border rounded-xl animate-fade-in">
-              <h3 className="text-lg font-semibold text-foreground">Instruções para a Análise (Prompt GPT)</h3>
-              <p className="text-muted-foreground text-sm">Descreva o tipo de análise que você deseja que a IA realize com base nos arquivos importados.</p>
-              <Textarea 
-                placeholder="Ex: 'Crie um resumo executivo dos resultados da campanha mais eficaz e sugira três ações para otimizar o CPM médio.'"
-                value={userPrompt}
-                onChange={(e) => setUserPrompt(e.target.value)}
-                rows={5}
-              />
-            </div>
-          )}
+          
+          {/* 🟢 Aba de Prompt */}
+          {files.length > 0 && files.every((f) => f.status !== "uploading") && (
+            <div className="mt-8 space-y-4 p-6 bg-card border border-border rounded-xl animate-fade-in">
+              <h3 className="text-lg font-semibold text-foreground">Instruções para a Análise (Prompt GPT)</h3>
+              <p className="text-muted-foreground text-sm">Descreva o tipo de análise que você deseja que a IA realize com base nos arquivos importados.</p>
+              <Textarea 
+                placeholder="Ex: 'Crie um resumo executivo dos resultados da campanha mais eficaz e sugira três ações para otimizar o CPM médio.'"
+                value={userPrompt}
+                onChange={(e) => setUserPrompt(e.target.value)}
+                rows={5}
+              />
+            </div>
+          )}
 
 
           {/* Action Button */}
           {files.length > 0 && files.every((f) => f.status !== "uploading") && (
             <div className="mt-8 text-center animate-fade-in">
               <Button 
-                variant="default" 
-                size="lg" 
-                onClick={handleProcessFiles} 
-                disabled={isProcessing || !userPrompt.trim()} // Desabilita se não houver prompt
-              >
+                variant="default" 
+                size="lg" 
+                onClick={handleProcessFiles} 
+                disabled={isProcessing || !userPrompt.trim()} // Desabilita se não houver prompt
+              >
                 {isProcessing ? (<><Loader2 className="w-4 h-4 animate-spin mr-2" />Processando...</>) : "Gerar Relatório com IA"}
               </Button>
             </div>
