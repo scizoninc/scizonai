@@ -37,7 +37,7 @@ function parseMultipartForm(req: NextApiRequest): Promise<{ userPrompt: string, 
         bb.on('file', (name, file, info) => {
             filesBeingProcessed++; 
             const tempDir = os.tmpdir();
-            // Sanitiza o nome para evitar erros de caracteres
+            // Sanitiza o nome do arquivo
             const safeName = path.basename(info.filename).replace(/[^a-zA-Z0-9.-]/g, '_');
             const filename = path.join(tempDir, `${Date.now()}-${safeName}`); 
             const writeStream = fs.createWriteStream(filename);
@@ -92,19 +92,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     console.log(`Recebidos ${tempFiles.length} arquivos. Processando tipos...`);
 
-    // 2. Separação de Estratégia: Texto vs Binário (Upload)
+    // 2. Lógica Inteligente: Texto vs Binário
     let textContext = "";
     const filesToUpload: typeof tempFiles = [];
 
     for (const file of tempFiles) {
         const lowerMime = file.mimeType.toLowerCase();
 
-        // ❌ BLOQUEIO EXPLÍCITO DE EXCEL (O modelo não lê binário XLS, precisa ser CSV/PDF)
+        // Bloqueio de Excel Binário (O modelo não lê XLSX nativamente, converta para CSV)
         if (lowerMime.includes('spreadsheetml') || lowerMime.includes('excel') || lowerMime.includes('xls')) {
-            throw new Error(`O formato Excel (.xlsx/.xls) não é suportado diretamente. Salve como CSV (.csv) ou PDF.`);
+            throw new Error(`O formato Excel (.xlsx) não é suportado diretamente. Salve como CSV (.csv) e tente novamente.`);
         }
 
-        // 📄 ARQUIVOS DE TEXTO (CSV, JSON, TXT, CODE) -> Lemos e adicionamos ao prompt
+        // Se for arquivo de texto (CSV, JSON, XML), lemos o conteúdo e passamos como texto
         if (
             lowerMime.includes('csv') || 
             lowerMime.includes('json') || 
@@ -115,16 +115,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         ) {
             console.log(`Lendo arquivo de texto: ${file.originalName}`);
             const content = fs.readFileSync(file.filepath, 'utf-8');
-            textContext += `\n\n--- Conteúdo do Arquivo: ${file.originalName} ---\n${content}\n-----------------------------------\n`;
+            textContext += `\n\n--- DADOS DO ARQUIVO: ${file.originalName} ---\n${content}\n-----------------------------------\n`;
         } 
-        // 🖼️ ARQUIVOS DE MÍDIA/PDF -> Fazemos Upload via File API
+        // Se for Mídia (PDF, Imagem), fazemos upload
         else {
             console.log(`Preparando upload de binário: ${file.originalName} (${file.mimeType})`);
             filesToUpload.push(file);
         }
     }
 
-    // 3. Upload apenas dos arquivos suportados (PDF, Imagem, Audio)
+    // 3. Upload apenas dos arquivos binários suportados
     if (filesToUpload.length > 0) {
         uploadedGeminiFiles = await Promise.all(
           filesToUpload.map(fileInfo => ai!.files.upload({
@@ -136,9 +136,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     // 4. Montagem do Payload
-    const finalPrompt = userPrompt + (textContext ? `\n\nCONTEXTO DE DADOS ADICIONAL:\n${textContext}` : "");
+    const finalPrompt = userPrompt + (textContext ? `\n\nCONTEXTO DE DADOS EXTRAÍDOS:\n${textContext}` : "");
 
-    // Cria as referências para os arquivos que sofreram upload
+    // Cria as referências
     const fileParts = uploadedGeminiFiles.map(file => ({
         fileData: {
             mimeType: file.mimeType, 
@@ -151,10 +151,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         ...fileParts,
     ];
 
-    // 5. Chamada à API (USANDO MODELO ESTÁVEL)
-    // 'gemini-1.5-flash' é rápido, barato e estável. Evita o erro 503 de modelos experimentais.
+    // 5. Chamada à API
+    // 🟢 TENTATIVA COM O MODELO MAIS RECENTE (GEMINI 2.0 FLASH)
+    // Se der erro 503 novamente, mude manualmente aqui para 'gemini-1.5-flash'
     const response = await ai!.models.generateContent({
-      model: 'gemini-1.5-flash', 
+      model: 'gemini-2.0-flash-exp', 
       contents: promptPayload as any,
     });
 
@@ -162,10 +163,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   } catch (error: any) {
     console.error('Erro na geração:', error);
-    // Se o erro for 503, avisa o usuário para tentar de novo
-    if (error.status === 503 || error.code === 503) {
-         return res.status(503).json({ error: 'O modelo de IA está sobrecarregado no momento. Por favor, aguarde alguns segundos e tente novamente.' });
+    
+    // Tratamento específico para o erro de sobrecarga (503)
+    if (error.status === 503 || error.code === 503 || (error.message && error.message.includes('overloaded'))) {
+         return res.status(503).json({ error: 'O modelo Gemini 2.0 (Experimental) está sobrecarregado. Tente novamente em alguns instantes ou mude para o modelo estável.' });
     }
+
     return res.status(400).json({ error: error.message || 'Erro no processamento.' });
   } finally {
     // 6. Limpeza
