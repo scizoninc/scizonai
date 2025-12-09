@@ -31,40 +31,47 @@ export const config = {
  * Retorna o prompt do usuário e os caminhos dos arquivos temporários.
  */
 function parseMultipartForm(req: NextApiRequest): Promise<{ userPrompt: string, files: { filepath: string, mimeType: string }[] }> {
-  return new Promise((resolve, reject) => {
-    // Usa req.headers, pois o Next.js não injeta o Body no 'req' quando bodyParser: false
-    const bb = busboy({ headers: req.headers });
-    const fields: Record<string, string> = {};
-    const filesInfo: { filepath: string, mimeType: string }[] = [];
+    return new Promise((resolve, reject) => {
+        const bb = busboy({ headers: req.headers });
+        const fields: Record<string, string> = {};
+        const filesInfo: { filepath: string, mimeType: string }[] = [];
+        
+        let filesBeingProcessed = 0; // Contador de arquivos
 
-    bb.on('field', (name, val) => { fields[name] = val; });
-    
-    bb.on('file', (name, file, info) => {
-      // Cria um caminho temporário seguro
-      const tempDir = os.tmpdir();
-      // Usa um nome único para o arquivo para evitar colisões
-      const filename = path.join(tempDir, `${Date.now()}-${info.filename}`); 
-      
-      const writeStream = fs.createWriteStream(filename);
-      file.pipe(writeStream);
-      
-      file.on('end', () => { 
-        filesInfo.push({ filepath: filename, mimeType: info.mimeType }); 
-      });
-      
-      writeStream.on('error', reject);
-      file.on('error', reject);
-    });
-    
-    bb.on('close', () => { 
-      resolve({ userPrompt: fields.user_prompt || '', files: filesInfo }); 
-    });
-    bb.on('error', reject);
-    
-    req.pipe(bb); // Inicia o parsing do stream da requisição
-  });
+        bb.on('field', (name, val) => { fields[name] = val; });
+
+        bb.on('file', (name, file, info) => {
+            filesBeingProcessed++; // Um novo arquivo sendo processado
+            const tempDir = os.tmpdir();
+            const filename = path.join(tempDir, `${Date.now()}-${info.filename}`); 
+            const writeStream = fs.createWriteStream(filename);
+            
+            file.pipe(writeStream);
+
+            writeStream.on('finish', () => {
+                filesInfo.push({ filepath: filename, mimeType: info.mimeType });
+                filesBeingProcessed--; // Arquivo terminado
+                if (filesBeingProcessed === 0 && bb.writableEnded) {
+                     // Resolve se todos os arquivos terminaram E o busboy terminou
+                    resolve({ userPrompt: fields.user_prompt || '', files: filesInfo });
+                }
+            });
+
+            writeStream.on('error', reject);
+            file.on('error', reject);
+        });
+        
+        // Se o busboy fechar e nenhum arquivo estiver sendo processado, resolve.
+        bb.on('finish', () => {
+            if (filesBeingProcessed === 0) {
+                resolve({ userPrompt: fields.user_prompt || '', files: filesInfo });
+            }
+        });
+
+        bb.on('error', reject);
+        req.pipe(bb);
+    });
 }
-
 // ----------------------------------------------------------------------
 // 3. Handler Principal (Lógica Gemini)
 // ----------------------------------------------------------------------
