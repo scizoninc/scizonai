@@ -175,7 +175,7 @@ const ImportFilePage = () => {
           {/* 🟢 Aba de Prompt */}
           {files.length > 0 && files.every((f) => f.status !== "uploading") && (
             <div className="mt-8 space-y-4 p-6 bg-card border border-border rounded-xl animate-fade-in">
-              <h3 className="text-lg font-semibold text-foreground">Instruções para a Análise (Prompt GPT)</h3>
+              <h3 className="text-lg font-semibold text-foreground">Prompt</h3>
               <p className="text-muted-foreground text-sm">Descreva o tipo de análise que você deseja que a IA realize com base nos arquivos importados.</p>
               <Textarea 
                 placeholder="Ex: 'Crie um resumo executivo dos resultados da campanha mais eficaz e sugira três ações para otimizar o CPM médio.'"
@@ -196,7 +196,7 @@ const ImportFilePage = () => {
                 onClick={handleProcessFiles} 
                 disabled={isProcessing || !userPrompt.trim()} // Desabilita se não houver prompt
               >
-                {isProcessing ? (<><Loader2 className="w-4 h-4 animate-spin mr-2" />Processando...</>) : "Gerar Relatório com IA"}
+                {isProcessing ? (<><Loader2 className="w-4 h-4 animate-spin mr-2" />Processando...</>) : "Fazer Análise"}
               </Button>
             </div>
           )}

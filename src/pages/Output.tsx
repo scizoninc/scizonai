@@ -156,7 +156,7 @@ const OutputPage = () => {
                 <div className="max-w-4xl mx-auto">
                     <div className="text-center mb-12">
                         <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-4 flex items-center justify-center gap-3">
-                            <Sparkles className="w-8 h-8 text-primary" /> Relatório Gerado por IA
+                            <Sparkles className="w-8 h-8 text-primary" /> Análise Gerada por IA
                         </h1>
                         <p className="text-muted-foreground text-lg">Análise profunda dos seus dados de mídia exterior.</p>
                     </div>
@@ -165,7 +165,7 @@ const OutputPage = () => {
                     {isLoading && (
                         <div className="text-center mb-8">
                             <Loader2 className="w-6 h-6 animate-spin text-primary mx-auto mb-2" />
-                            <p className="text-sm text-muted-foreground">Conectando ao servidor Vercel e processando os arquivos com Gemini...</p>
+                            <p className="text-sm text-muted-foreground">Conectando e processando os arquivos com nossa IA...</p>
                         </div>
                     )}
 
