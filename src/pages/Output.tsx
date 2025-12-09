@@ -6,7 +6,7 @@ import { CheckCircle, Download, Loader2, FileText, Sparkles, AlertCircle } from 
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"; 
 
-// 2. Função de Chamada API REAL
+// 2. Função de Chamada API REAL (MODIFICADA para tratamento de erro robusto)
 const callGeminiApi = async (prompt: string, files: File[]): Promise<string> => {
     // 1. Cria um objeto FormData para enviar arquivos e campos de texto
     const formData = new FormData();
@@ -27,8 +27,23 @@ const callGeminiApi = async (prompt: string, files: File[]): Promise<string> => 
         });
 
         if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || `Erro HTTP: ${response.status}`);
+            const contentType = response.headers.get("content-type");
+            let errorMessage = `Erro HTTP: ${response.status} ${response.statusText}`;
+
+            // 🟢 TRATAMENTO DE ERRO ROBUSTO: Tenta ler JSON, senão assume erro de servidor
+            if (contentType && contentType.includes("application/json")) {
+                try {
+                    const errorData = await response.json();
+                    errorMessage = errorData.error || errorMessage;
+                } catch (e) {
+                    errorMessage = "Erro na resposta da API (JSON Inválido no erro).";
+                }
+            } else {
+                // Captura o cenário onde o Vercel retorna HTML (Ex: 'The page c...')
+                errorMessage = `Erro Crítico do Servidor (Não JSON - Status ${response.status}). Verifique as logs ou a chave API.`;
+            }
+
+            throw new Error(errorMessage);
         }
 
         const data = await response.json();
@@ -119,8 +134,8 @@ const OutputPage = () => {
                     <h1 className="text-2xl font-bold mb-2">Sessão Expirada</h1>
                     <p className="text-muted-foreground">Os arquivos de processamento foram perdidos após a atualização da página.</p>
                     <Link to="/" className="text-primary hover:underline mt-4 block">
-                        <Button>Voltar e Importar Novamente</Button>
-                    </Link>
+                        <Button>Voltar e Importar Novamente</Button>
+                    </Link>
                 </div>
             </div>
         );
