@@ -22,56 +22,49 @@ export const config = {
   },
 };
 
-// ----------------------------------------------------------------------
-// 2. Função de Parsing de Multipart (busboy)
-// ----------------------------------------------------------------------
-
-/**
- * Analisa a requisição multipart/form-data, salvando arquivos temporariamente.
- * Retorna o prompt do usuário e os caminhos dos arquivos temporários.
- */
 function parseMultipartForm(req: NextApiRequest): Promise<{ userPrompt: string, files: { filepath: string, mimeType: string }[] }> {
-    return new Promise((resolve, reject) => {
-        const bb = busboy({ headers: req.headers });
-        const fields: Record<string, string> = {};
-        const filesInfo: { filepath: string, mimeType: string }[] = [];
-        
-        let filesBeingProcessed = 0; // Contador de arquivos
+    return new Promise((resolve, reject) => {
+        const bb = busboy({ headers: req.headers });
+        const fields: Record<string, string> = {};
+        const filesInfo: { filepath: string, mimeType: string }[] = [];
+        
+        let filesBeingProcessed = 0; // Contador de arquivos para garantir sincronização
 
-        bb.on('field', (name, val) => { fields[name] = val; });
+        bb.on('field', (name, val) => { fields[name] = val; });
 
-        bb.on('file', (name, file, info) => {
-            filesBeingProcessed++; // Um novo arquivo sendo processado
-            const tempDir = os.tmpdir();
-            const filename = path.join(tempDir, `${Date.now()}-${info.filename}`); 
-            const writeStream = fs.createWriteStream(filename);
-            
-            file.pipe(writeStream);
+        bb.on('file', (name, file, info) => {
+            filesBeingProcessed++; 
+            const tempDir = os.tmpdir();
+            const filename = path.join(tempDir, `${Date.now()}-${info.filename}`); 
+            const writeStream = fs.createWriteStream(filename);
+            
+            file.pipe(writeStream);
 
-            writeStream.on('finish', () => {
-                filesInfo.push({ filepath: filename, mimeType: info.mimeType });
-                filesBeingProcessed--; // Arquivo terminado
-                if (filesBeingProcessed === 0 && bb.writableEnded) {
-                     // Resolve se todos os arquivos terminaram E o busboy terminou
-                    resolve({ userPrompt: fields.user_prompt || '', files: filesInfo });
-                }
-            });
+            writeStream.on('finish', () => {
+                filesInfo.push({ filepath: filename, mimeType: info.mimeType });
+                filesBeingProcessed--; 
+                // Se todos os arquivos terminaram E o busboy também (bb.writableEnded), resolve.
+                if (filesBeingProcessed === 0 && bb.writableEnded) {
+                    resolve({ userPrompt: fields.user_prompt || '', files: filesInfo });
+                }
+            });
 
-            writeStream.on('error', reject);
-            file.on('error', reject);
-        });
-        
-        // Se o busboy fechar e nenhum arquivo estiver sendo processado, resolve.
-        bb.on('finish', () => {
-            if (filesBeingProcessed === 0) {
-                resolve({ userPrompt: fields.user_prompt || '', files: filesInfo });
-            }
-        });
+            writeStream.on('error', reject);
+            file.on('error', reject);
+        });
+        
+        // Garante que a Promise resolva se não houver arquivos, ou após o último arquivo.
+        bb.on('finish', () => {
+            if (filesBeingProcessed === 0) {
+                resolve({ userPrompt: fields.user_prompt || '', files: filesInfo });
+            }
+        });
 
-        bb.on('error', reject);
-        req.pipe(bb);
-    });
+        bb.on('error', reject);
+        req.pipe(bb);
+    });
 }
+
 // ----------------------------------------------------------------------
 // 3. Handler Principal (Lógica Gemini)
 // ----------------------------------------------------------------------
@@ -94,6 +87,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     console.log(`Processando ${tempFiles.length} arquivos com prompt: "${userPrompt.substring(0, 50)}..."`);
 
     // 2. Upload para o Gemini File API
+    // Usamos 'ai!' para garantir que o Typescript aceite que 'ai' não é null neste ponto
     uploadedGeminiFiles = await Promise.all(
       tempFiles.map(fileInfo => ai!.files.upload({
         file: fileInfo.filepath,
@@ -102,15 +96,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }))
     );
 
-    // 3. Montagem e Geração de Conteúdo
-    const promptPayload = [
-        userPrompt, 
-        ...uploadedGeminiFiles,
+    // 3. Montagem do Payload (Corrigido para resolver o erro INVALID_ARGUMENT)
+    // É construído um array plano contendo a string do prompt e os objetos File.
+    const promptPayload: Array<string | GeminiFile> = [
+        userPrompt,
+        ...uploadedGeminiFiles,
     ];
 
+    // Chamada final à API
     const response = await ai!.models.generateContent({
-        model: 'gemini-2.5-flash', // Modelo mais rápido e multimodal
-        contents: promptPayload,
+      model: 'gemini-2.5-flash',
+      contents: promptPayload,
     });
 
     // 4. Retorno do Relatório
@@ -118,10 +114,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   } catch (error: any) {
     console.error('Erro na geração de conteúdo:', error);
-    // Garante que o frontend receba um erro formatado em JSON
     return res.status(500).json({ error: error.message || 'Erro interno do servidor ao processar o relatório.' });
   } finally {
-    // 5. Limpeza de Recursos (Crucial)
+    // 5. Limpeza de Recursos (Crucial para evitar custos e vazamento de disco)
     
     // Deleta os arquivos no Gemini File API
     if (uploadedGeminiFiles.length > 0) {
