@@ -22,6 +22,15 @@ export const config = {
   },
 };
 
+// ----------------------------------------------------------------------
+// 2. Função de Parsing de Multipart (busboy)
+// (Lógica de sincronização aprimorada)
+// ----------------------------------------------------------------------
+
+/**
+ * Analisa a requisição multipart/form-data, salvando arquivos temporariamente.
+ * Retorna o prompt do usuário e os caminhos dos arquivos temporários.
+ */
 function parseMultipartForm(req: NextApiRequest): Promise<{ userPrompt: string, files: { filepath: string, mimeType: string }[] }> {
     return new Promise((resolve, reject) => {
         const bb = busboy({ headers: req.headers });
@@ -44,7 +53,7 @@ function parseMultipartForm(req: NextApiRequest): Promise<{ userPrompt: string, 
                 filesInfo.push({ filepath: filename, mimeType: info.mimeType });
                 filesBeingProcessed--; 
                 // Se todos os arquivos terminaram E o busboy também (bb.writableEnded), resolve.
-                if (filesBeingProcessed === 0 && bb.writableEnded) {
+                if (filesBeingProcessed === 0 && (bb as any).writableEnded) { // Asserção de tipo para writableEnded
                     resolve({ userPrompt: fields.user_prompt || '', files: filesInfo });
                 }
             });
@@ -87,7 +96,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     console.log(`Processando ${tempFiles.length} arquivos com prompt: "${userPrompt.substring(0, 50)}..."`);
 
     // 2. Upload para o Gemini File API
-    // Usamos 'ai!' para garantir que o Typescript aceite que 'ai' não é null neste ponto
     uploadedGeminiFiles = await Promise.all(
       tempFiles.map(fileInfo => ai!.files.upload({
         file: fileInfo.filepath,
@@ -96,17 +104,25 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }))
     );
 
-    // 3. Montagem do Payload (Corrigido para resolver o erro INVALID_ARGUMENT)
-    // É construído um array plano contendo a string do prompt e os objetos File.
-    const promptPayload: Array<string | GeminiFile> = [
-        userPrompt,
-        ...uploadedGeminiFiles,
+    // 3. Montagem do Payload (CORREÇÃO FINAL para o erro INVALID_ARGUMENT)
+    // Mapeia os objetos File do upload para o formato de referência fileUri esperado no contents.
+    const fileParts = uploadedGeminiFiles.map(file => ({
+        fileData: {
+            mimeType: file.mimeType, 
+            fileUri: file.name,      // O 'name' é o ID de referência do arquivo no Gemini
+        },
+    }));
+
+    // Concatena o prompt de texto com as referências dos arquivos
+    const promptPayload = [
+        { text: userPrompt }, // O prompt como uma parte de texto
+        ...fileParts,         // As referências de arquivo
     ];
 
     // Chamada final à API
     const response = await ai!.models.generateContent({
       model: 'gemini-2.5-flash',
-      contents: promptPayload,
+      contents: promptPayload as any, // 'as any' para forçar o TS aceitar a estrutura mista customizada
     });
 
     // 4. Retorno do Relatório
