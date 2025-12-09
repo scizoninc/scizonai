@@ -37,7 +37,7 @@ function parseMultipartForm(req: NextApiRequest): Promise<{ userPrompt: string, 
         bb.on('file', (name, file, info) => {
             filesBeingProcessed++; 
             const tempDir = os.tmpdir();
-            // Sanitiza o nome do arquivo para evitar problemas de encoding
+            // Sanitiza o nome para evitar erros de caracteres
             const safeName = path.basename(info.filename).replace(/[^a-zA-Z0-9.-]/g, '_');
             const filename = path.join(tempDir, `${Date.now()}-${safeName}`); 
             const writeStream = fs.createWriteStream(filename);
@@ -99,9 +99,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     for (const file of tempFiles) {
         const lowerMime = file.mimeType.toLowerCase();
 
-        // ❌ BLOQUEIO EXPLÍCITO DE EXCEL
+        // ❌ BLOQUEIO EXPLÍCITO DE EXCEL (O modelo não lê binário XLS, precisa ser CSV/PDF)
         if (lowerMime.includes('spreadsheetml') || lowerMime.includes('excel') || lowerMime.includes('xls')) {
-            throw new Error(`O formato Excel (.xlsx/.xls) não é suportado diretamente pelo modelo. Por favor, salve seu arquivo como CSV (.csv) ou PDF e tente novamente.`);
+            throw new Error(`O formato Excel (.xlsx/.xls) não é suportado diretamente. Salve como CSV (.csv) ou PDF.`);
         }
 
         // 📄 ARQUIVOS DE TEXTO (CSV, JSON, TXT, CODE) -> Lemos e adicionamos ao prompt
@@ -136,7 +136,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     // 4. Montagem do Payload
-    // O texto agora inclui o prompt do usuário + conteúdo dos arquivos CSV/JSON lidos
     const finalPrompt = userPrompt + (textContext ? `\n\nCONTEXTO DE DADOS ADICIONAL:\n${textContext}` : "");
 
     // Cria as referências para os arquivos que sofreram upload
@@ -152,9 +151,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         ...fileParts,
     ];
 
-    // 5. Chamada à API
+    // 5. Chamada à API (USANDO MODELO ESTÁVEL)
+    // 'gemini-1.5-flash' é rápido, barato e estável. Evita o erro 503 de modelos experimentais.
     const response = await ai!.models.generateContent({
-      model: 'gemini-flash-latest', // Recomendo o 2.0 ou 1.5 Pro
+      model: 'gemini-1.5-flash', 
       contents: promptPayload as any,
     });
 
@@ -162,7 +162,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   } catch (error: any) {
     console.error('Erro na geração:', error);
-    // Retorna mensagem de erro limpa para o frontend
+    // Se o erro for 503, avisa o usuário para tentar de novo
+    if (error.status === 503 || error.code === 503) {
+         return res.status(503).json({ error: 'O modelo de IA está sobrecarregado no momento. Por favor, aguarde alguns segundos e tente novamente.' });
+    }
     return res.status(400).json({ error: error.message || 'Erro no processamento.' });
   } finally {
     // 6. Limpeza
