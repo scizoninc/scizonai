@@ -154,7 +154,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // 5. Chamada à API
     const response = await ai!.models.generateContent({
-      model: 'gemini-2.0-flash', // Recomendo o 2.0 ou 1.5 Pro
+      model: 'gemini-flash-latest', // Recomendo o 2.0 ou 1.5 Pro
       contents: promptPayload as any,
     });
 
