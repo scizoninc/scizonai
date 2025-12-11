@@ -64,6 +64,12 @@ function parseMultipartForm(req: NextApiRequest): Promise<{ userPrompt: string, 
 // 3. Handler Principal (CORRIGIDO PARA JSON)
 // ----------------------------------------------------------------------
 
+// ... [ Imports, Config, parseMultipartForm permanecem INALTERADOS ] ...
+
+// ----------------------------------------------------------------------
+// 3. Handler Principal (CORRIGIDO PARA LEITURA VIA BUFFER)
+// ----------------------------------------------------------------------
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
     if (req.method !== 'POST') return res.status(405).send('Método não permitido');
     if (!ai) return res.status(500).json({ error: 'Chave API não configurada.' });
@@ -84,22 +90,27 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         // 2. Lógica Inteligente: Converte XLSX/Lê Texto/Prepara Upload Binário
         for (const file of tempFiles) {
             const lowerMime = file.mimeType.toLowerCase();
-            const filenameExt = path.extname(file.originalName).toLowerCase();
 
-            // 🟢 TRATAMENTO XLSX/XLS: LER E CONVERTER PARA JSON
+            // 🟢 TRATAMENTO XLSX/XLS: LER VIA BUFFER E CONVERTER PARA JSON
             if (lowerMime.includes('spreadsheetml') || lowerMime.includes('excel') || lowerMime.includes('xls')) {
-                console.log(`Convertendo Excel para JSON: ${file.originalName}`);
+                console.log(`Convertendo Excel para JSON via Buffer: ${file.originalName}`);
                 
                 try {
-                    const workbook = XLSX.readFile(file.filepath);
-                    const sheetName = workbook.SheetNames[0]; // Pega a primeira aba
+                    // 💡 LER O ARQUIVO BINÁRIO (XLSX) COMO BUFFER
+                    const fileBuffer = fs.readFileSync(file.filepath); 
+                    
+                    // 💡 USAR XLSX.read COM O BUFFER BINÁRIO
+                    const workbook = XLSX.read(fileBuffer, { type: 'buffer' });
+                    
+                    const sheetName = workbook.SheetNames[0]; 
                     const jsonContent = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
 
                     // Adiciona o JSON ao contexto de texto do prompt
                     textContext += `\n\n--- DADOS DA PLANILHA ${file.originalName} (JSON) ---\n${JSON.stringify(jsonContent, null, 2)}\n-----------------------------------\n`;
                 } catch (e) {
-                    console.error('Erro ao processar XLSX:', e);
-                    throw new Error(`Não foi possível ler o arquivo Excel (${file.originalName}). Verifique o formato.`);
+                    // Se falhar a leitura via Buffer, retornamos o erro específico
+                    console.error('Erro ao processar XLSX via Buffer:', e);
+                    throw new Error(`Não foi possível ler o arquivo Excel (${file.originalName}). Verifique o formato ou se as permissões de acesso ao arquivo temporário estão corretas.`);
                 }
             }
             // Arquivos de texto que lemos localmente
@@ -132,7 +143,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         // 4. Montagem do Payload
         const finalPrompt = userPrompt + (textContext ? `\n\nCONTEXTO DE DADOS EXTRAÍDOS:\n${textContext}` : "");
 
-        // Referência dos arquivos upados (PDFs, Imagens)
         const fileParts = uploadedGeminiFiles.map(file => ({
             fileData: {
                 mimeType: file.mimeType,
@@ -154,16 +164,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         return res.status(200).json({ report: response.text() });
 
     } catch (error: any) {
-        console.error('Erro detalhado:', JSON.stringify(error, null, 2));
+        console.error('Erro detalhado na thread:', JSON.stringify(error, null, 2));
         
         if (error.status === 503 || (error.message && error.message.includes('overloaded'))) {
              return res.status(503).json({ error: 'O modelo Gemini está sobrecarregado. Tente novamente.' });
         }
         
+        // Retorna a mensagem de erro original, seja ela customizada (do XLSX) ou do Gemini/Outros
         return res.status(400).json({ error: error.message || 'Erro no processamento.' });
 
     } finally {
-        // 6. Limpeza (Crucial em Serverless)
+        // 6. Limpeza
         if (uploadedGeminiFiles.length > 0) {
             Promise.all(
               uploadedGeminiFiles.map(f => ai!.files.delete({ name: f.name }).catch(e => console.error('Erro delete Gemini:', e)))
