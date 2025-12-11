@@ -12,7 +12,10 @@ const API_KEY = process.env.GEMINI_API_KEY;
 const ai = API_KEY ? new GoogleGenAI(API_KEY) : null;
 
 export const config = { api: { bodyParser: false } };
-// ... [ parseMultipartForm permanece INALTERADO ] ...
+
+// ----------------------------------------------------------------------
+// 2. Parse Multipart (Mantido igual)
+// ----------------------------------------------------------------------
 function parseMultipartForm(req: NextApiRequest): Promise<{ userPrompt: string, files: { filepath: string, mimeType: string, originalName: string }[] }> {
     return new Promise((resolve, reject) => {
         const bb = busboy({ headers: req.headers });
@@ -60,7 +63,7 @@ function parseMultipartForm(req: NextApiRequest): Promise<{ userPrompt: string, 
 }
 
 // ----------------------------------------------------------------------
-// 3. Handler Principal
+// 3. Handler Principal (CORRIGIDO)
 // ----------------------------------------------------------------------
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -71,6 +74,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     let uploadedGeminiFiles: GeminiFile[] = [];
 
     try {
+        // 1. Recebe arquivos
         const { userPrompt, files: receivedFiles } = await parseMultipartForm(req);
         tempFiles = receivedFiles;
         
@@ -80,31 +84,32 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         let textContext = "";
         const filesToUpload: typeof tempFiles = [];
 
+        // 2. Separa Texto vs Binário (Excel entra como Binário agora)
         for (const file of tempFiles) {
             const lowerMime = file.mimeType.toLowerCase();
 
-            // TRATAMENTO XLSX/XLS: Enviado via Upload de Arquivo
+            // XLSX/XLS -> Upload Binário
             if (lowerMime.includes('spreadsheetml') || lowerMime.includes('excel') || lowerMime.includes('xls')) {
-                console.log(`Preparando upload de arquivo Excel: ${file.originalName}`);
+                console.log(`Upload de Excel: ${file.originalName}`);
                 filesToUpload.push(file);
             }
-            // Arquivos de texto que lemos localmente
+            // CSV/JSON/TXT -> Lê o texto e concatena no prompt
             else if (
                 lowerMime.includes('csv') || lowerMime.includes('json') || 
                 lowerMime.includes('text/') || lowerMime.includes('xml')
             ) {
-                console.log(`Lendo arquivo de texto: ${file.originalName}`);
+                console.log(`Lendo texto: ${file.originalName}`);
                 const content = fs.readFileSync(file.filepath, 'utf-8');
-                textContext += `\n\n--- DADOS DO ARQUIVO: ${file.originalName} ---\n${content}\n-----------------------------------\n`;
+                textContext += `\n\n--- ARQUIVO DE TEXTO: ${file.originalName} ---\n${content}\n-----------------------------------\n`;
             } 
-            // Outras mídias (PDF, Imagem)
+            // PDF/Imagem -> Upload Binário
             else {
-                console.log(`Preparando upload de binário: ${file.originalName} (${file.mimeType})`);
+                console.log(`Upload de binário: ${file.originalName}`);
                 filesToUpload.push(file);
             }
         }
 
-        // 3. Upload dos arquivos binários suportados
+        // 3. Upload para o Google (Files API)
         if (filesToUpload.length > 0) {
             uploadedGeminiFiles = await Promise.all(
               filesToUpload.map(fileInfo => ai!.files.upload({
@@ -115,48 +120,50 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             );
         }
 
-        // 4. Montagem do Payload (CORREÇÃO CRÍTICA AQUI)
-        const finalPrompt = userPrompt + (textContext ? `\n\nCONTEXTO DE DADOS EXTRAÍDOS:\n${textContext}` : "");
+        // 4. Montagem do Payload (AQUI ESTAVA O ERRO, AGORA CORRIGIDO)
+        const finalPrompt = userPrompt + (textContext ? `\n\nCONTEXTO DE TEXTO EXTRAÍDO:\n${textContext}` : "");
 
-        // 🟢 CORREÇÃO: Mapeia o objeto File retornado para o formato Part esperado pela generateContent
+        // 🟢 CORREÇÃO: Usar 'fileData' com 'fileUri', NÃO 'inlineData'
         const fileParts = uploadedGeminiFiles.map(file => ({
-            inlineData: {
-                data: file.name, // O 'name' é a URI/ID do arquivo no servidor do Google
+            fileData: {
                 mimeType: file.mimeType,
-            },
+                fileUri: file.uri // Usamos a URI retornada pelo upload
+            }
         }));
 
         const promptPayload = [
-            { text: finalPrompt }, // O primeiro item precisa ser { text: ... }
+            { text: finalPrompt },
             ...fileParts,
         ];
 
-        // 5. Chamada à API
+        // 5. Chamada à API (Gerar Conteúdo)
         const response = await ai!.models.generateContent({
           model: 'gemini-1.5-flash', 
           contents: promptPayload as any,
         });
 
-        return res.status(200).json({ report: response.text });
+        return res.status(200).json({ report: response.text() });
 
     } catch (error: any) {
-        console.error('Erro na geração:', error);
+        console.error('Erro detalhado:', JSON.stringify(error, null, 2));
         
-        if (error.status === 503 || error.code === 503 || (error.message && error.message.includes('overloaded'))) {
-             return res.status(503).json({ error: 'O modelo Gemini está sobrecarregado. Tente novamente em instantes.' });
+        if (error.status === 503 || (error.message && error.message.includes('overloaded'))) {
+             return res.status(503).json({ error: 'O modelo Gemini está sobrecarregado. Tente novamente.' });
+        }
+        
+        // Tratamento para erro de MIME type inválido
+        if (error.message && error.message.includes('MIME type')) {
+            return res.status(400).json({ error: 'Erro de formato: O arquivo enviado não é suportado pelo Gemini.' });
         }
 
-        const friendlyError = error.message.includes('Unsupported MIME type') 
-            ? `Erro de Formato: O arquivo XLSX/PDF/Imagem enviado não é suportado pelo Gemini ou a versão do modelo (gemini-1.5-flash) não o reconheceu. Tente converter o arquivo para PDF ou CSV.`
-            : error.message || 'Erro no processamento.';
-            
-        return res.status(400).json({ error: friendlyError });
+        return res.status(400).json({ error: error.message || 'Erro no processamento.' });
 
     } finally {
-        // 6. Limpeza (Crucial em Serverless)
+        // 6. Limpeza
         if (uploadedGeminiFiles.length > 0) {
+            // Não bloqueia a resposta, mas limpa em background
             Promise.all(
-              uploadedGeminiFiles.map(f => ai!.files.delete({ name: f.name }).catch(e => console.error('Erro ao deletar arquivo Gemini:', e)))
+              uploadedGeminiFiles.map(f => ai!.files.delete({ name: f.name }).catch(e => console.error('Erro delete Gemini:', e)))
             );
         }
         tempFiles.forEach(f => { 
