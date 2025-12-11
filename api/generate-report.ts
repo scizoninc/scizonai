@@ -96,10 +96,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                 console.log(`Convertendo Excel para JSON via Buffer: ${file.originalName}`);
                 
                 try {
-                    // 💡 LER O ARQUIVO BINÁRIO (XLSX) COMO BUFFER
                     const fileBuffer = fs.readFileSync(file.filepath); 
                     
-                    // 💡 USAR XLSX.read COM O BUFFER BINÁRIO
                     const workbook = XLSX.read(fileBuffer, { type: 'buffer' });
                     
                     const sheetName = workbook.SheetNames[0]; 
@@ -161,7 +159,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           contents: promptPayload as any,
         });
 
-        return res.status(200).json({ report: response.text() });
+        return res.status(200).json({ report: response.text });
 
     } catch (error: any) {
         console.error('Erro detalhado na thread:', JSON.stringify(error, null, 2));
