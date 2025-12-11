@@ -26,7 +26,6 @@ function parseMultipartForm(req: NextApiRequest): Promise<{ userPrompt: string, 
         bb.on('file', (name, file, info) => {
             filesBeingProcessed++; 
             const tempDir = os.tmpdir();
-            // Sanitiza o nome do arquivo
             const safeName = path.basename(info.filename).replace(/[^a-zA-Z0-9.-]/g, '_');
             const filename = path.join(tempDir, `${Date.now()}-${safeName}`); 
             const writeStream = fs.createWriteStream(filename);
@@ -59,6 +58,7 @@ function parseMultipartForm(req: NextApiRequest): Promise<{ userPrompt: string, 
         req.pipe(bb);
     });
 }
+
 // ----------------------------------------------------------------------
 // 3. Handler Principal
 // ----------------------------------------------------------------------
@@ -83,13 +83,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         for (const file of tempFiles) {
             const lowerMime = file.mimeType.toLowerCase();
 
-            // 🟢 TRATAMENTO XLSX/XLS: Deve ser enviado via Upload de Arquivo
+            // TRATAMENTO XLSX/XLS: Enviado via Upload de Arquivo
             if (lowerMime.includes('spreadsheetml') || lowerMime.includes('excel') || lowerMime.includes('xls')) {
                 console.log(`Preparando upload de arquivo Excel: ${file.originalName}`);
-                // Adiciona o arquivo Excel para upload binário.
                 filesToUpload.push(file);
             }
-            // Arquivos de texto que lemos localmente e passamos no prompt
+            // Arquivos de texto que lemos localmente
             else if (
                 lowerMime.includes('csv') || lowerMime.includes('json') || 
                 lowerMime.includes('text/') || lowerMime.includes('xml')
@@ -105,7 +104,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             }
         }
 
-        // 3. Upload apenas dos arquivos binários suportados (incluindo XLSX/XLS)
+        // 3. Upload dos arquivos binários suportados
         if (filesToUpload.length > 0) {
             uploadedGeminiFiles = await Promise.all(
               filesToUpload.map(fileInfo => ai!.files.upload({
@@ -116,20 +115,25 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             );
         }
 
-        // 4. Montagem do Payload
+        // 4. Montagem do Payload (CORREÇÃO CRÍTICA AQUI)
         const finalPrompt = userPrompt + (textContext ? `\n\nCONTEXTO DE DADOS EXTRAÍDOS:\n${textContext}` : "");
 
-        // O payload deve incluir o objeto File do Gemini
-        const fileParts = uploadedGeminiFiles.map(file => file); // A API espera o objeto File completo
-        
+        // 🟢 CORREÇÃO: Mapeia o objeto File retornado para o formato Part esperado pela generateContent
+        const fileParts = uploadedGeminiFiles.map(file => ({
+            inlineData: {
+                data: file.name, // O 'name' é a URI/ID do arquivo no servidor do Google
+                mimeType: file.mimeType,
+            },
+        }));
+
         const promptPayload = [
-            finalPrompt,
+            { text: finalPrompt }, // O primeiro item precisa ser { text: ... }
             ...fileParts,
         ];
 
         // 5. Chamada à API
         const response = await ai!.models.generateContent({
-          model: 'gemini-1.5-flash', // Usando 1.5-flash que tem suporte comprovado a mais formatos.
+          model: 'gemini-1.5-flash', 
           contents: promptPayload as any,
         });
 
@@ -142,7 +146,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
              return res.status(503).json({ error: 'O modelo Gemini está sobrecarregado. Tente novamente em instantes.' });
         }
 
-        // Captura o erro da API e exibe uma mensagem mais amigável
         const friendlyError = error.message.includes('Unsupported MIME type') 
             ? `Erro de Formato: O arquivo XLSX/PDF/Imagem enviado não é suportado pelo Gemini ou a versão do modelo (gemini-1.5-flash) não o reconheceu. Tente converter o arquivo para PDF ou CSV.`
             : error.message || 'Erro no processamento.';
