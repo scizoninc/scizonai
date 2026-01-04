@@ -43,7 +43,7 @@ const App = () => (
         </Routes>
       </BrowserRouter>
       <Analytics />
-      <SpeedInsights/>
+      <SpeedInsights />
     </TooltipProvider>
   </QueryClientProvider>
 );
