@@ -17,9 +17,6 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Document, Packer, Paragraph, TextRun, AlignmentType } from "docx";
 import { saveAs } from "file-saver";
 
-// ----------------------------------------------------------------------
-// 1. Função de Chamada API (Servidor)
-// ----------------------------------------------------------------------
 const callGeminiApi = async (prompt: string, files: File[]): Promise<string> => {
     const formData = new FormData();
     formData.append('user_prompt', prompt);
@@ -113,7 +110,6 @@ const OutputPage = () => {
         return () => clearInterval(intervalId);
     }, [fullReport, isLoading]);
 
-    // 🟢 FUNÇÃO: Gerar e Baixar arquivo Word (.docx)
     const downloadAsWord = async () => {
         if (!fullReport) return;
 
@@ -185,7 +181,7 @@ const OutputPage = () => {
                         <h1 className="text-3xl md:text-4xl font-extrabold mb-3 flex items-center justify-center gap-3">
                             <Sparkles className="w-8 h-8 text-primary" /> Relatório Inteligente
                         </h1>
-                        <p className="text-muted-foreground">Resultados gerados via Gemini 1.5 Pro/Flash.</p>
+                        <p className="text-muted-foreground">Resultados gerados pela IA.</p>
                     </div>
 
                     {isLoading && (
