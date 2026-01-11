@@ -12,19 +12,19 @@ import {
   X,
   Megaphone 
 } from "lucide-react";
-import { Link, useNavigate, useLocation } from "react-router-dom"; // 🟢 Importado useLocation
+import { Link, useNavigate, useLocation } from "react-router-dom"; 
 import { Button } from "@/components/ui/button";
 
 // Definição dos itens do menu lateral (mantido)
 const navItems = [
-  { name: "Visão Geral", icon: Home, route: "/dashboard" },
+  { name: "Visão Geral", icon: Home, route: "/outdoor" },
   { name: "Análise de Dados", icon: BarChart3, route: "/dashboard/analytics" },
-  { name: "Mídia Exterior", icon: Megaphone, route: "/outdoor" }, 
+  { name: "Dashboard", icon: Megaphone, route: "/Dashboard" }, 
   { name: "Relatórios", icon: AreaChart, route: "/dashboard/reports" },
   { name: "Configurações", icon: Settings, route: "/dashboard/settings" },
 ];
 
-// 🟢 Tipagem simulada para o resultado da análise
+// Tipagem simulada para o resultado da análise
 interface AnalysisResult {
   totalImpressions: string;
   avgCpm: string;
@@ -33,7 +33,7 @@ interface AnalysisResult {
   tableData: any[]; // Dados da tabela
 }
 
-// 🟢 Função de Simulação de Análise de Dados da Planilha
+// Função de Simulação de Análise de Dados da Planilha
 // Em um cenário real, você faria o parsing do arquivo (CSV/Excel) aqui.
 const analyzeData = (fileContents: string[]): AnalysisResult => {
   // Se não houver conteúdo, retorna valores padrão/vazios
@@ -75,11 +75,11 @@ const OutdoorPage = () => {
   const [activeItem, setActiveItem] = useState("/outdoor");
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const navigate = useNavigate();
-  // 🟢 Leitura dos dados passados via state
+  // Leitura dos dados passados via state
   const location = useLocation();
   const { fileUrls } = (location.state as { fileUrls?: string[] }) || {};
 
-  // 🟢 3. Análise de dados usando useMemo para evitar recalculos desnecessários
+  // 3. Análise de dados usando useMemo para evitar recalculos desnecessários
   const analysis = useMemo(() => {
     // Em um cenário real, você buscaria e leria o conteúdo dos fileUrls aqui.
     // Por enquanto, passamos apenas os URLs para a função, indicando que o arquivo existe.
@@ -174,7 +174,7 @@ const OutdoorPage = () => {
             </Button>
             <h1 className="text-2xl font-semibold flex items-center gap-2">
                 <Megaphone className="h-6 w-6 text-primary" />
-                {navItems.find(item => item.route === activeItem)?.name || "Mídia Exterior"}
+                {navItems.find(item => item.route === activeItem)?.name || "Dashboard"}
             </h1>
           </div>
 
@@ -210,7 +210,7 @@ const OutdoorPage = () => {
           </p>
 
           <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {/* 🟢 Usando dados da análise para popular os cards */}
+            {/* Usando dados da análise para popular os cards */}
             <MetricCard icon={Megaphone} title="Campanhas Ativas" value={analysis.activeCampaigns} change="+3" />
             <MetricCard icon={AreaChart} title="Total de Impressões" value={analysis.totalImpressions} change="+18.0%" />
             <MetricCard icon={DollarSign} title="Custo Médio/CPM" value={analysis.avgCpm} change="-0.5%" />
@@ -240,7 +240,7 @@ const OutdoorPage = () => {
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-border">
-                        {/* 🟢 Usando dados da análise para popular a tabela */}
+                        {/* Usando dados da análise para popular a tabela */}
                         {analysis.tableData.map((panel, i) => (
                             <tr key={i} className="hover:bg-muted/10 transition-colors duration-200">
                                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-foreground">{panel.id}</td>
